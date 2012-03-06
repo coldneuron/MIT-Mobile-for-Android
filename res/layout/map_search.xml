@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:id="@+id/mapSearch"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent">
+  
+   	<edu.mit.mitmobile2.TitleBar
+   		android:id="@+id/mapTitleBar"
+   		android:layout_width="fill_parent"
+   		android:layout_height="wrap_content"  />
+   		
+	<!--  
+
+   		<RelativeLayout
+  			android:layout_width="fill_parent"
+  			android:layout_height="wrap_content">
+
+			<LinearLayout
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content" >
+				
+	  			<ImageButton
+  					android:background="@android:color/transparent"
+  					android:scaleType="fitXY"
+  					android:src="@drawable/search_box"
+					android:id="@+id/searchBox"
+					android:layout_weight="1"
+					android:layout_width="fill_parent"
+					android:layout_height="wrap_content" />	
+					
+				<ImageButton
+					android:background="@android:color/transparent"
+					android:src="@drawable/search_glass"
+					android:id="@+id/searchButton"
+					android:text="Search"
+					android:layout_gravity="right"
+					android:layout_width="wrap_content" 
+					android:layout_height="wrap_content" />
+					
+			</LinearLayout>
+				
+				
+		</RelativeLayout>
+-->
+
+		<EditText
+			android:id="@+id/mapSearchText"
+			android:hint="Search MIT Campus"
+			android:layout_height="wrap_content"
+			android:layout_width="wrap_content"
+			android:layout_alignParentLeft="true"
+			android:layout_centerVertical="true"
+			android:paddingLeft="15dip"
+			style="@style/Deck"
+			/>
+
+    	<!-- LIST OF LOCATIONS FOR SELECTED CATEGORIES -->    
+		<ListView android:id="@+id/mapSearchListView"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="#ffff"
+        style="@style/Lists" 
+        android:visibility="visible" />  
+
+</LinearLayout>

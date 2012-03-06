@@ -7,13 +7,17 @@ import java.util.Random;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -37,296 +41,153 @@ import com.esri.core.symbol.SimpleMarkerSymbol;
 import com.esri.core.symbol.SimpleMarkerSymbol.STYLE;
 import com.esri.core.tasks.ags.query.Query;
 import com.esri.core.tasks.ags.query.QueryTask;
+import com.google.android.maps.GeoPoint;
 
+import edu.mit.mitmobile2.MITNewsWidgetActivity;
+import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.R;
+import edu.mit.mitmobile2.TitleBar;
+import edu.mit.mitmobile2.shuttles.ShuttlesActivity;
+import edu.mit.mitmobile2.shuttles.ShuttlesModule;
 
-public class ArcGISActivity extends Activity {
-	
+public class ArcGISActivity extends MapBaseActivity2 {
+
 	private static final String TAG = "ArcGISActivity";
-	MapView map = null;
-	ArcGISTiledMapServiceLayer serviceLayer;
-	String targetLayer;
-	QueryTask queryTask;
-	Query query;
-	FeatureSet featureSet;
-	Location location;
-	Button querybt;
-	EditText buildingQuery;
-	GraphicsLayer gl;
-	GraphicsLayer graphicsLayer;
-	Graphic[] highlightGraphics;  
+	public static final String MODULE_SHUTTLE = "shuttle";
 
-	boolean blQuery = true;
-	String buildingCriteria;
-	ProgressDialog progress;
+	// Generic Menu
+	static final int MENU_SEARCH = Menu.FIRST+1;
+	static final int MENU_MYLOC  = Menu.FIRST+2;
+	static final int MENU_BOOKMARKS = Menu.FIRST+3;
+	static final int MENU_BROWSE = Menu.FIRST+4;
 
-	final static int HAS_RESULTS = 1;
-	final static int NO_RESULT = 2;
-	final static int CLEAR_RESULT = 3;
+	// Shuttle Menu
+	static final int MENU_SHUTTLES = Menu.FIRST+5;
+	//static final int MENU_REFRESH  = Menu.FIRST+6;
+	static final int MENU_SHUTTLE_LIST_VIEW = Menu.FIRST+7;
+	static final int MENU_MAP_LIST_VIEW = Menu.FIRST+8;
+	static final int MENU_CALL_SAFERIDE = Menu.FIRST+9;
 	
-	private static final int WEST_LONGITUDE_E6  = -71132698;
-	private static final int EAST_LONGITUDE_E6  = -71006698;
-	private static final int NORTH_LATITUDE_E6  =  42407741;
-	private static final int SOUTH_LATITUDE_E6  =  42331392;
-	
-	String targetServerURL = "http://ims-pub.mit.edu/ArcGIS/rest/services/mobile/WhereIs_Base_Topo_Mobile/MapServer";
-
-	/** Called when the activity is first created. */
-	public void onCreate(Bundle savedInstanceState) {
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.arcgis);
-		
-		// Retrieve the map and initial extent from XML layout
-		map = (MapView)findViewById(R.id.map);
+		progressContext = ArcGISActivity.this;
+	    TitleBar titleBar = (TitleBar) findViewById(R.id.mapTitleBar);
+	    titleBar.setTitle("Campus Map");
 
-		// Define Layers
-		serviceLayer = new ArcGISTiledMapServiceLayer("http://ims-pub.mit.edu/ArcGIS/rest/services/mobile/WhereIs_Base_Topo_Mobile/MapServer");
-		graphicsLayer = new GraphicsLayer();
-		
-		// Add Layers
-		map.addLayer(serviceLayer);
-		map.addLayer(graphicsLayer);
-
-		queryTask = new QueryTask(targetServerURL + "/17");
-
-		query = new Query();
-		query.setReturnGeometry(true);
-		query.setReturnIdsOnly(false);
-		
-		querybt = (Button) findViewById(R.id.queryButton);
-		buildingQuery = (EditText) findViewById(R.id.buildingQuery);
-		
-		// Acquire a reference to the system Location Manager
-		LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-		// Define a listener that responds to location updates
-		LocationListener locationListener = new LocationListener() {
-		    public void onLocationChanged(Location location) {
-		      // Called when a new location is found by the network location provider.
-		      makeUseOfNewLocation(location);
-		    }
-
-		    private void makeUseOfNewLocation(Location location) {
-				// TODO Auto-generated method stub
-				Log.d(TAG,"lat = " + location.getLatitude());
-				Log.d(TAG,"lon = " + location.getLongitude());
-		    }
-
-			public void onStatusChanged(String provider, int status, Bundle extras) {}
-
-		    public void onProviderEnabled(String provider) {}
-
-		    public void onProviderDisabled(String provider) {}
-		  };
-
-		// Register the listener with the Location Manager to receive location updates
-		locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
-
-		location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-		
-		
-		//location = map.getLocationService().getLocation();
-		double lat = location.getLatitude() *1000000;
-		double lon = location.getLongitude() *1000000;
-		Log.d(TAG,"lat:" + lat + "\nlon:" + lon);
-		Point centerPt = new Point();
-		centerPt.setX(lat);
-		centerPt.setY(lon);
-		//map.centerAt(centerPt, true);
-
-		map.setOnZoomListener(new MyOnZoomListener());
-		map.setOnSingleTapListener(new MyOnSingleTapListener());
-		
-		querybt.setOnClickListener(new View.OnClickListener() {
-
-			public void onClick(View v) {
-
-				targetLayer = targetServerURL.concat("/17");
-				Log.d(TAG,"targetLayer = " + targetLayer);
-				buildingCriteria = buildingQuery.getEditableText().toString();
-				query.setText(buildingCriteria);
-				String[] queryParams = { targetLayer};
-				AsyncQueryTask asyncQuery = new AsyncQueryTask();
-				asyncQuery.execute(queryParams);
-			}
-		});
-
-		//Retrieve the non-configuration instance data that was previously returned. 
-		Object init = getLastNonConfigurationInstance();
-		if (init != null) {
-			map.restoreState((String) init);
-		}	
-		
+	    this.setSearchActivity(MapSearchActivity.class);
+	    	    
 	}
 	
-	/**
-	 * 
-	 * Query Task executes asynchronously.
-	 * 
-	 */
-	private class AsyncQueryTask extends AsyncTask<String, Void, FeatureSet> {
-
-		protected void onPreExecute() {
-			progress = ProgressDialog.show(ArcGISActivity.this, "",
-					"Please wait....query task is executing");
-
-		}
-
-		/**
-		 * First member in parameter array is the query URL; second member is
-		 * the where clause.
-		 */
-		protected FeatureSet doInBackground(String... queryParams) {
-			Log.d(TAG,"doInBackground()");			
-
-			try {
-				featureSet = queryTask.execute(query);
-				//ArcGISFeatureLayer featureLayer = (ArcGISFeatureLayer) map.getLayer(0);
-				//featureLayer.queryFeatures(query, new  MyCallbackListener());
-
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				return featureSet;
-			}
-			return featureSet;
-
-		}
-
-		protected void onPostExecute(FeatureSet result) {
-			String message = "";
-			if (result != null) {
-
-				if (result.getGraphics() != null) {
-					
-					// clear graphics layer
-					graphicsLayer.removeAll();
-					
-					Graphic graphics[] = result.getGraphics();
-					message = graphics.length + " result(s) found";
-					Log.d(TAG,"num graphics = " + graphics.length);
-					highlightGraphics = new Graphic[graphics.length];
-					for (int i = 0; i < graphics.length; i++) {
-						Graphic graphic = graphics[i];
-						Geometry geometry = graphic.getGeometry();
-						Log.d(TAG,"geometry type = " + geometry.getType());
-						/////////////////////////
-		                Random r = new Random();
-		                int color = Color.rgb(r.nextInt(255), r.nextInt(255), r.nextInt(255));
-
-		                /*
-		                 * Create appropriate symbol, based on geometry type
-		                 */
-		                if (geometry.getType().name().equalsIgnoreCase("point")) {
-		                  SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, 20, STYLE.SQUARE);
-		                  highlightGraphics[i] = new Graphic(geometry, sms);
-		                } else if (geometry.getType().name().equalsIgnoreCase("polyline")) {
-		                  SimpleLineSymbol sls = new SimpleLineSymbol(color, 5);
-		                  highlightGraphics[i] = new Graphic(geometry, sls);
-		                } else if (geometry.getType().name().equalsIgnoreCase("polygon")) {
-		                  SimpleFillSymbol sfs = new SimpleFillSymbol(color);
-		                  sfs.setAlpha(75);
-		                  highlightGraphics[i] = new Graphic(geometry, sfs);
-		                }
-
-		                
-		                /**
-		                 * set the Graphic's geometry, add it to GraphicLayer and refresh the Graphic Layer
-		                 */
-		                graphicsLayer.addGraphic(highlightGraphics[i]);
-		                Polygon polygon = graphicsLayer.getExtent();
-		                Point point = polygon.getPoint(0);
-		        		point.setX(point.getX()*1000000);
-		        		point.setY(point.getY()*1000000);
-		                //map.centerAt(point,true);
-					}
-				}
-
-				
-			}
-			progress.dismiss();
-
-			Toast toast = Toast.makeText(ArcGISActivity.this, message,
-					Toast.LENGTH_LONG);
-			toast.show();
-			//blQuery = false;
-
-		}
-
-	}
-	protected void onPause() {
-		super.onPause();
-		map.pause();
- }
-
-	protected void onResume() {
-		super.onResume(); 
-		map.unpause();
-	}	
-	
-	final class MyOnZoomListener implements OnZoomListener {
-
-		@Override
-		public void postAction(float pivotX, float pivotY, double factor) {
-			Log.d(TAG,"zoom x:" + pivotX + " y:" + pivotY);
-			// TODO Auto-generated method stub
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Intent i;
+		
+		switch (item.getItemId()) {
+		case MENU_HOME:
+			i = new Intent(this,MITNewsWidgetActivity.class);  
+			startActivity(i);
+			finish();
+			break;
+		case MENU_SEARCH: 
+			//SearchManager sm = (SearchManager) ctx.getSystemService(Context.SEARCH_SERVICE);
+			//sm.startSearch(null, false, null, false);
+			onSearchRequested();
+			break;
+		case MENU_MYLOC: 
+			GeoPoint me = myLocationOverlay.getMyLocation();
+			//if (me!=null) mctrl.animateTo(me);
+			break;
+		case MENU_BOOKMARKS: 
+			i = new Intent(this,MITMapBrowseResultsActivity.class);  
+			startActivity(i);
+			break;
+		case MENU_BROWSE: 
+			i = new Intent(this,MITMapBrowseCatsActivity.class);  
+			startActivity(i);
+			break;
 			
+		case MENU_SHUTTLES: 
+			i = new Intent(this,ShuttlesActivity.class);  
+			i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			startActivity(i);
+			finish();
+			break; 
+			
+		case MENU_SHUTTLE_LIST_VIEW:
+			finish();
+			break;
+			
+		case MENU_MAP_LIST_VIEW:
+			if(mListView.getVisibility() == View.GONE) {
+				MapItemsAdapter adapter = new MapItemsAdapter(this, mMapItems);
+				mListView.setAdapter(adapter);
+				mListView.setOnItemClickListener(adapter.showMapDetailsOnItemClickListener());
+				mapView.setVisibility(View.GONE);
+				mListView.setVisibility(View.VISIBLE);
+			} else {
+				mListView.setVisibility(View.GONE);
+				mapView.setVisibility(View.VISIBLE);
+			}
+			break;
+			// FIXME
+			/*
+		case MENU_MAP_LIST_VIEW: 
+			i = new Intent(this, MITMapActivity.class);
+			i.putExtra(MITMapActivity.KEY_MODULE, MITMapActivity.MODULE_SHUTTLE); 
+			RoutesAsyncListView sv = (RoutesAsyncListView) getScreen(getSelectedIndex());
+			i.putExtra(MITMapActivity.KEY_HEADER_TITLE, sv.ri.title);
+			Global.curStops = (ArrayList<Stops>) sv.m_stops;
+			startActivity(i);
+			break;
+			*/
+		case MENU_CALL_SAFERIDE: 
+			i = new Intent(Intent.ACTION_DIAL);
+			i.setData(Uri.parse("tel:617-253-2997"));
+			startActivity(i);
+			break;
+
 		}
 
-		@Override
-		public void preAction(float pivotX, float pivotY, double factor) {
-			// TODO Auto-generated method stub
+		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		
+		menu.clear();
+		
+		menu.add(0, MENU_HOME, Menu.NONE, "Home")
+		  .setIcon(R.drawable.menu_home);
+		
+		if (module != null && module.equals(MODULE_SHUTTLE)) {
+			Module shuttleModule = new ShuttlesModule();
+			menu.add(0, MENU_SHUTTLES, Menu.NONE, shuttleModule.getMenuOptionTitle())
+			  .setIcon(shuttleModule.getMenuIconResourceId());
+			menu.add(0, MENU_SHUTTLE_LIST_VIEW, Menu.NONE, "List View")
+			  .setIcon(R.drawable.menu_browse);
+			//menu.add(0, MENU_CALL_SAFERIDE, Menu.NONE, "Saferide")
+			//	.setIcon(android.R.drawable.ic_menu_call);
+		} else {
+			menu.add(0, MENU_SEARCH, Menu.NONE, "Search")
+			  .setIcon(R.drawable.menu_search);
+			menu.add(0, MENU_MYLOC, Menu.NONE, "My Location") 
+			  .setIcon(R.drawable.menu_mylocation);
+			menu.add(0, MENU_BOOKMARKS, Menu.NONE, "Bookmarks")
+			  .setIcon(R.drawable.menu_bookmarks);
+			menu.add(0, MENU_BROWSE, Menu.NONE, "Browse")
+			  .setIcon(R.drawable.menu_browse);
 			
 		}
 		
+		return super.onPrepareOptionsMenu(menu);
 	}
 	
-	final class MyOnSingleTapListener implements OnSingleTapListener {
-
-		@Override
-		public void onSingleTap(float x, float y) {
-			// TODO Auto-generated method stub
-			Log.d(TAG,"tap x:" + x + " y:" + y);
-			Point point = new Point();
-			point.setX(x);
-			point.setY(y);
-			//map.centerAt(point, true);
-		}
-		
-	}
-
-	final class MyCallbackListener implements CallbackListener {
-
-		@Override
-		public void onCallback(Object objs) {
-			// TODO Auto-generated method stub
-			Log.d(TAG,"onCallback()");
-			if (objs != null)  {
-				Log.d(TAG,"class = " + objs.getClass());
-				FeatureSet featureSet = (FeatureSet)objs;
-				Log.d(TAG,featureSet.toString());
-	
-				if (featureSet.getObjectIds() != null) {
-					Integer objectIds[] = featureSet.getObjectIds();
-					for (int i = 0; i < objectIds.length; i++) {
-						Log.d(TAG,"objectId " + i + ": " + objectIds[i]);
-					}
-				}
-				Graphic graphics[] = featureSet.getGraphics();
-				for (int i = 0; i < graphics.length; i++) {
-					Graphic graphic = graphics[i];
-					Geometry geometry = graphic.getGeometry();
-					Log.d(TAG,"geometry type = " + geometry.getType());
-				}
-			}
-		}
-
-		@Override
-		public void onError(Throwable e) {
-			// TODO Auto-generated method stub
-			Log.d(TAG,"error: " + e.getMessage());
-		}
-		
+	@Override
+	public boolean onSearchRequested() {
+		if (MODULE_SHUTTLE.equals(module)) return false;
+		return super.onSearchRequested();
 	}
 	
 }

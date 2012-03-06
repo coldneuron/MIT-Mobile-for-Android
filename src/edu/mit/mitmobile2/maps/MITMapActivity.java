@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -33,8 +32,6 @@ import edu.mit.mitmobile2.shuttles.ShuttlesModule;
 
 public class MITMapActivity extends MapBaseActivity {
 
-	private static final String TAG = "MITMapActivity";
-	
 	// parameters for shuttles
 	public static final String KEY_SHUTTLE_STOPS = "shuttle_stops";
 	public static final String KEY_ROUTE = "shuttle_route";
@@ -72,8 +69,7 @@ public class MITMapActivity extends MapBaseActivity {
 	/****************************************************/
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
-	
-		Log.d(TAG,"onCreate()");
+		
 	    super.onCreate(savedInstanceState);
 	    
     	Bundle extras = getIntent().getExtras();

@@ -69,6 +69,12 @@
         	<meta-data android:name="android.app.default_searchable" android:value=".maps.MITMapActivity" />
         </activity>
 		<provider android:name=".maps.MapsSearchSuggestionsProvider" android:authorities="edu.mit.mitmobile2.maps.SuggestionsProvider" />
+
+		<!-- ARCGIS MAP TEST ACTIVITY  -->
+        <activity android:name=".maps.ArcGISActivity" android:launchMode="singleInstance" />
+        
+        <activity android:name=".maps.MapSearchActivity" android:launchMode="singleInstance" />
+
         
         <activity android:name=".events.EventsTopActivity">
         	<meta-data android:name="android.app.default_searchable" android:value=".events.EventsSearchActivity" />
