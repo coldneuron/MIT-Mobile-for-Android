@@ -1,10 +1,14 @@
 package edu.mit.mitmobile2.maps;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -29,10 +33,12 @@ import com.esri.android.map.MapView;
 import com.esri.android.map.ags.ArcGISTiledMapServiceLayer;
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Geometry;
+import com.esri.core.geometry.GeometryEngine;
 import com.esri.core.geometry.Point;
 import com.esri.core.geometry.SpatialReference;
 import com.esri.core.map.FeatureSet;
 import com.esri.core.map.Graphic;
+import com.esri.core.symbol.MarkerSymbol;
 import com.esri.core.symbol.PictureMarkerSymbol;
 import com.esri.core.symbol.SimpleMarkerSymbol;
 import com.esri.core.symbol.SimpleMarkerSymbol.STYLE;
@@ -43,8 +49,11 @@ import edu.mit.mitmobile2.LoaderBar;
 import edu.mit.mitmobile2.MITSearchRecentSuggestions;
 import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.R;
+import edu.mit.mitmobile2.MobileWebApi.DefaultErrorListener;
+import edu.mit.mitmobile2.MobileWebApi.JSONArrayResponseListener;
 import edu.mit.mitmobile2.maps.MapSearch;
 import edu.mit.mitmobile2.objs.MapItem;
+import edu.mit.mitmobile2.objs.SearchResults;
 
 public abstract class MapBaseActivity2 extends Activity {
 
@@ -52,6 +61,8 @@ public abstract class MapBaseActivity2 extends Activity {
 	protected MapView mapView;
 	protected ArcGISTiledMapServiceLayer mapServiceLayer;
 	protected GraphicsLayer mapGraphicsLayer;
+	protected GraphicsLayer buildingsGraphicsLayer;
+	
 	protected Context mContext;
 
 	ProgressDialog progress;
@@ -368,14 +379,17 @@ public abstract class MapBaseActivity2 extends Activity {
 		
 		// Define Layers
 		mapServiceLayer = new ArcGISTiledMapServiceLayer(ARCGIS_SERVER_URL);
-		mapGraphicsLayer = new GraphicsLayer();
+		//mapGraphicsLayer = new GraphicsLayer();
 
 		// Add Layers
+
+		//Layer 0 is the map layer
 		mapView.addLayer(mapServiceLayer);
 		Log.d(TAG,"mapView.addLayer(mapServiceLayer)");
 
-		// add this layer after the graphics are added
-		//mapView.addLayer(new GraphicsLayer(mapServiceLayer.getSpatialReference(),null));
+		// Layer 1 is the buildings layer
+		buildingsGraphicsLayer = new GraphicsLayer();
+		mapView.addLayer(buildingsGraphicsLayer);
 
 		MapBaseActivity2.serverLayerMap = new HashMap<String, MapServerLayer>();
 
@@ -494,6 +508,40 @@ public abstract class MapBaseActivity2 extends Activity {
 	    public static final String CANNED_RESTROOM = "CANNED_RESTROOM";
 	}
 	
+	public static class MapSymbolType {
+		
+		// These Symbol Types use images from R.drawable
+	    public static final String MAP_BUILDING = "MAP_BUILDING"; 
+	    public static final String MAP_ATHENA = "MAP_ATHENA"; 
+	    public static final String MAP_CURRENT = "MAP_CURRENT";
+	    public static final String MAP_CURRENT_STOP = "MAP_CURRENT_STOP"; 
+	    public static final String MAP_ENDING_ARROW = "MAP_ENDING_ARROW"; 
+	    public static final String MAP_FOOD_SERVICES = "MAP_FOOD_SERVICES"; 
+	    public static final String MAP_FUTURE = "MAP_FUTURE"; 
+	    public static final String MAP_GREEN_SPACE = "MAP_GREEN_SPACEP"; 
+	    public static final String MAP_HOTEL = "MAP_HOTEL";
+	    public static final String MAP_LIBRARIES = "MAP_LIBRARIES"; 
+	    public static final String MAP_MUSEUM = "MAP_MUSEUM"; 	    
+	    public static final String MAP_PARKING = "MAP_PARKING";
+	    public static final String MAP_PAST = "MAP_PAST";
+	    public static final String MAP_SHUTTLE = "MAP_SHUTTLE";
+	    public static final String MAP_SHUTTLE_NEXT = "MAP_SHUTTLE_NEXT";
+	    public static final String MAP_RED_PIN = "MAP_RED_PIN";
+	    public static final String MAP_RESIDENCE = "MAP_RESIDENCE";
+	    public static final String MAP_ROOM = "MAP_ROOM";
+	    public static final String MAP_STREET = "MAP_STREET";
+	    
+	    // These Symbol Types are generated images
+	    public static final String MAP_CIRCLE = "MAP_CIRCLE";
+	    public static final String MAP_CROSS = "MAP_CROSS";
+	    public static final String MAP_DIAMOND = "MAP_DIAMOND";
+	    public static final String MAP_SQUARE = "MAP_SQUARE";
+	    public static final String MAP_X = "MAP_X";
+	}
+
+	private static int DEFAULT_SYMBOL_SIZE = 20;
+	private static int DEFAULT_SYMBOL_COLOR = Color.RED;
+	
 	public class MapSearchOption {
 		MapSearchType type;
 		String label;
@@ -538,7 +586,7 @@ public abstract class MapBaseActivity2 extends Activity {
 		runQuery(mMapSearch);
 	}
 	
-	private class AsyncQueryTask extends AsyncTask<MapSearch, Void, FeatureSet> {
+	private class AsyncQueryTask extends AsyncTask<MapSearch, Void, List> {
 
 		@Override
 		protected void onPreExecute() {
@@ -548,16 +596,35 @@ public abstract class MapBaseActivity2 extends Activity {
 		}
 
 		@Override
-		protected FeatureSet doInBackground(MapSearch... params) {
+		protected List doInBackground(MapSearch... params) {
 			// TODO Auto-generated method stub
+			List data = new ArrayList();
 			MapSearch m = params[0];
-			Log.d(TAG,"type = " + m.type);
-			Log.d(TAG,"building = " + (m.building)[0]);
-			String queryUrl;
-			String building = "";
+			FeatureSet featureSet = new FeatureSet();
+//			String queryUrl;
+//			String building = "";
+
 			// BUILDING SEARCH
 			if (m.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.CANNED_BUILDING)) {
-				queryUrl = MapBaseActivity2.getQueryUrl(MapBaseActivity2.BUILDINGS);
+				featureSet = buildingSearch(m); // lets see if this is run synchronously 
+			}
+			
+			// KEYWORD SEARCH
+			if (m.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.KEYWORD)) {
+				featureSet = keywordSearch(m);
+			}
+						
+			data.add(m);
+			data.add(featureSet);
+			return data;
+
+		}
+
+		// BUILDING SEARCH
+		public FeatureSet buildingSearch(MapSearch m) {
+				FeatureSet featureSet = new FeatureSet();
+				String queryUrl = MapBaseActivity2.getQueryUrl(MapBaseActivity2.BUILDINGS);
+				String building = "";
 				if (m.building != null && m.building.length > 0 ) {
 					building = (m.building)[0]; // ultimately, this should be an array. We;re just using the first value for testing purposes 
 				}
@@ -574,13 +641,58 @@ public abstract class MapBaseActivity2 extends Activity {
 					e.printStackTrace();
 					featureSet = null;
 				}
-			}
-			return featureSet;
+				return featureSet;
 		}
 
+		// KEYWORD SEARCH 
+		public FeatureSet keywordSearch(MapSearch m) {
+			FeatureSet featureSet = new FeatureSet();
+			String[] keywords = (String[])m.getCriteria().get(MapSearch.CriteriaType.KEY_WORDS);
+			String searchTerm = keywords[0];
+			
+			// First search the whereis server to get buildings matching the keyword search
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("q", searchTerm);
+			params.put("command", "search");
+			MobileWebApi webApi = new MobileWebApi(false, true, "Campus map", mContext, keywordUiHandler);
+			
+			webApi.requestJSONArray("/map", params, new JSONArrayResponseListener(new DefaultErrorListener(keywordUiHandler), null) {
+				@Override
+				public void onResponse(JSONArray array) throws JSONException {
+					
+					List<MapItem> mapsItems = MapParser.parseMapItems(array);
+					
+					for (MapItem m : mapsItems) {
+						Log.d(TAG,m.bldgnum);
+					}
+										
+					MobileWebApi.sendSuccessMessage(keywordUiHandler, mapsItems);
+				}
+				
+			});
+			
+			return null;
+		}
+		
+		Handler keywordUiHandler = null;
+		
+//		HashMap<String, String> params = new HashMap<String, String>();
+//
+//		params.put("q", searchTerm);
+//		params.put("command", "search");
+//		MobileWebApi webApi = new MobileWebApi(false, true, "Campus map", context, uiHandler);
+//		webApi.requestJSONArray("/map", params, new JSONArrayResponseListener(new DefaultErrorListener(uiHandler), null) {
+
+		
 		@Override
-		protected void onPostExecute(FeatureSet result) {
+		protected void onPostExecute(List data) {
 			// TODO Auto-generated method stub
+			MapSearch m = (MapSearch)data.get(0);
+			FeatureSet result = (FeatureSet)data.get(1);
+			Geometry[] geometryList;
+			
+			// get the appropriate symbol based on the mapsearch parameters
+			MarkerSymbol markerSymbol = getMarkerSymbol(m);
 			String message = "";
 			Log.d(TAG,"onPostExecute");
 			if (result == null) {
@@ -592,28 +704,29 @@ public abstract class MapBaseActivity2 extends Activity {
 				if (result.getGraphics() != null) {
 					Log.d(TAG,"graphics not null");	
 						// clear graphics layer
-						mapGraphicsLayer.removeAll();
-						//mapGraphicsLayer = new GraphicsLayer(mapServiceLayer.getSpatialReference(),mapServiceLayer.getFullExtent());
+						buildingsGraphicsLayer.removeAll();
+						
 						Graphic graphics[] = result.getGraphics();
+						geometryList = new Geometry[graphics.length];
 						message = graphics.length + " results found";
 						Log.d(TAG,"num graphics = " + graphics.length);
 						highlightGraphics = new Graphic[graphics.length];
+						
 						for (int i = 0; i < graphics.length; i++) {
 							Graphic graphic = graphics[i];
 							Geometry geometry = graphic.getGeometry();
+							geometryList[i] = geometry;
 							Log.d(TAG,"geometry type = " + geometry.getType());
 							/////////////////////////
 			                Random r = new Random();
 			                int color = Color.rgb(r.nextInt(255), r.nextInt(255), r.nextInt(255));
+			                Log.d(TAG,"color value = " + color);
 
 			                /*
 			                 * Create appropriate symbol, based on geometry type
 			                 */
 			                if (geometry.getType().name().equalsIgnoreCase("point")) {
-			                  //SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, 20, STYLE.SQUARE);
-			                  PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_red_pin));
-			                  //highlightGraphics[i] = new Graphic(geometry, sms);
-			                  highlightGraphics[i] = new Graphic(geometry, pms);			                
+			                  highlightGraphics[i] = new Graphic(geometry, markerSymbol);			                
 			                } 
 			                else if (geometry.getType().name().equalsIgnoreCase("polyline")) {
 			                  //SimpleLineSymbol sls = new SimpleLineSymbol(color, 5);
@@ -623,28 +736,20 @@ public abstract class MapBaseActivity2 extends Activity {
 			                else if (geometry.getType().name().equalsIgnoreCase("polygon")) {
 			                  Envelope env = new Envelope();
 			                  geometry.queryEnvelope(env);
+			            
 			                  Point point = env.getCenter();
-			                  PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_red_pin));
-			                  //SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, 20, STYLE.CIRCLE);
 
-			                  highlightGraphics[i] = new Graphic(point, pms);
-			                  // temporarily use center points for polylines
-			                  //SimpleFillSymbol sfs = new SimpleFillSymbol(color);
-			                  //sfs.setAlpha(75);
-			                  //highlightGraphics[i] = new Graphic(geometry, sfs);
+			                  highlightGraphics[i] = new Graphic(point, markerSymbol);
 			                }
-
-			                
-			                /**
-			                 * set the Graphic's geometry, add it to GraphicLayer and refresh the Graphic Layer
-			                 */
 						}
 						
 						// Add highlight graphics to graphics layer
-						mapGraphicsLayer.addGraphics(highlightGraphics);
+						buildingsGraphicsLayer.addGraphics(highlightGraphics);
 
-						// Add graphics layer to mapView
-						mapView.addLayer(mapGraphicsLayer);
+						// The the extent of the map to the extent of the search results
+						Geometry unionGeometry = GeometryEngine.union(geometryList,mapView.getSpatialReference());
+						mapView.setExtent(unionGeometry,100);				
+
 						Log.d(TAG,"num layers on map = " + mapView.getLayers().length);
 					}
 					else {
@@ -666,22 +771,6 @@ public abstract class MapBaseActivity2 extends Activity {
 		Log.d(TAG,"runQuery()");
 		AsyncQueryTask asyncQuery = new AsyncQueryTask();
 		asyncQuery.execute(mMapSearch);
-
-		// Building Search
-//			Log.d(TAG,"queryUrl = " + queryUrl);
-//			queryTask = new QueryTask(queryUrl);
-//			query = new Query();
-//			query.setReturnGeometry(true);
-//			query.setReturnIdsOnly(false);
-//			String building = (mMapSearch.getBuilding())[0];
-//			query.setText(building);
-//			Log.d(TAG,"text = " + query.getText());
-//			String[] queryParams = {queryUrl};
-//			Log.d(TAG,"queryParams = " + queryParams[0]);
-//			AsyncQueryTask asyncQuery = new AsyncQueryTask();
-			
-			//AsyncQueryTask asyncQuery = new AsyncQueryTask();
-			//asyncQuery.execute(mMapSearch);
 	}
 
 	// ASYNCQUERY
@@ -690,83 +779,141 @@ public abstract class MapBaseActivity2 extends Activity {
 	 * Query Task executes asynchronously.
 	 * 
 	 */
-//	class AsyncQueryTask extends AsyncTask<MapSearch, Void, FeatureSet> {
-//		protected void onPreExecute() {
-//			progress = ProgressDialog.show(mContext, "",
-//					"Please wait....query task is executing");
-//		}
-//
-//		/**
-//		 * First member in parameter array is the query URL; second member is
-//		 * the where clause.
-//		 */
-//		protected FeatureSet doInBackground(String... queryParams) {
-////			Log.d(TAG,"doInBackground()");			
-////			Log.d(TAG,"queryParams = " + queryParams);			
-////			Log.d(TAG,queryTask.toString());			
-////			Log.d(TAG,"query = "  + query.getText());
-////			try {
-////				featureSet = queryTask.execute(query);
-////			} catch (Exception e) {
-////				progress.dismiss();
-////				// TODO Auto-generated catch block
-////				Log.d(TAG,"Exception");
-////				Log.d(TAG,e.getLocalizedMessage());
-////				e.printStackTrace();
-////				return featureSet;
-////			}
-////			return featureSet;
-//			String url = queryParams[0];
-//			query = new Query();
-//			query.setReturnGeometry(true);
-//			query.setText((mMapSearch.getBuilding())[0]);
-//			query.setWhere("");
-//			queryTask = new QueryTask(url);
-//			FeatureSet fs = null;
-//
-//			try {
-//				fs = queryTask.execute(query);
-//			} catch (Exception e) {
-//				// TODO Auto-generated catch block
-//				progress.dismiss();
-//				e.printStackTrace();
-//				return fs;
-//			}
-//			return fs;
-//
-//
-//
-//		}
-//
-//		@Override
-//		protected FeatureSet doInBackground(MapSearch... params) {
-//			// TODO Auto-generated method stub
-//			queryUrl = MapBaseActivity2.getQueryUrl(BUILDINGS); 
-//			query = new Query();
-//			query.setReturnGeometry(true);
-//			query.setText((mMapSearch.getBuilding())[0]);
-//			queryTask = new QueryTask(url);
-//			FeatureSet fs = null;
-//
-//			try {
-//				fs = queryTask.execute(query);
-//			} catch (Exception e) {
-//				// TODO Auto-generated catch block
-//				progress.dismiss();
-//				e.printStackTrace();
-//				return fs;
-//			}
-//			return fs;
-//
-//			return null;
-//		}
-//	}
-//	
-//	protected void onPostExecute(FeatureSet result) {
-//		progress.dismiss();
-//		processResult(result);
-//	}
-//
 
+	public MarkerSymbol getMarkerSymbol(MapSearch m) {
+		MarkerSymbol s = null;
+		int color = MapBaseActivity2.DEFAULT_SYMBOL_COLOR;
+	
+		// If No marker image is defined, use the default marker for the search type
+		if (m.image == null || m.image.length() == 0) {
+			
+			// CANNED_BUILDING
+			if (m.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.CANNED_BUILDING)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_building_number));
+				 return pms;
+			}
+
+			// CANNED PARKING
+			if (m.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.CANNED_LIBRARY)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_building_number));
+				 return pms;
+			}
+		}
+		else {
+			
+			// If no color is defined, used the default color
+			if (m.color == null || m.color.trim().length() == 0) {
+				color = MapBaseActivity2.DEFAULT_SYMBOL_COLOR;
+			}
+			
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_ATHENA)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_athena));
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_BUILDING)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_building_number));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_CURRENT)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_current));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_CURRENT_STOP)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_currentstop));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_ENDING_ARROW)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_ending_arrow));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_FOOD_SERVICES)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_food_services));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_FUTURE)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_future));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_GREEN_SPACE)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_green_space));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_HOTEL)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_hotel));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_LIBRARIES)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_libraries));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_MUSEUM)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_museum));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_PAST)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_past));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_SHUTTLE)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_pin_shuttle_stop_complete));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_SHUTTLE_NEXT)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_pin_shuttle_stop_complete_next));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_RED_PIN)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_red_pin));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_RESIDENCE)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_residence));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_ROOM)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_selected_rooms));				
+				 return pms;
+			}
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_STREET)) {
+				 PictureMarkerSymbol pms = new PictureMarkerSymbol((BitmapDrawable) mContext.getResources().getDrawable(R.drawable.map_street));				
+				 return pms;
+			}
+
+			// Simple Marker Symbols
+
+			// Circle
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_CIRCLE)) {
+				 SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, MapBaseActivity2.DEFAULT_SYMBOL_SIZE, STYLE.CIRCLE);			
+				 return sms;
+			}
+
+			// Cross
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_CROSS)) {
+				 SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, MapBaseActivity2.DEFAULT_SYMBOL_SIZE, STYLE.CROSS);			
+				 return sms;
+			}
+
+			// Diamond
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_DIAMOND)) {
+				 SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, MapBaseActivity2.DEFAULT_SYMBOL_SIZE, STYLE.DIAMOND);			
+				 return sms;
+			}
+
+			// Square
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_SQUARE)) {
+				 SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, MapBaseActivity2.DEFAULT_SYMBOL_SIZE, STYLE.SQUARE);			
+				 return sms;
+			}
+			
+			// X
+			if (m.image.equalsIgnoreCase(MapSymbolType.MAP_X)) {
+				 SimpleMarkerSymbol sms = new SimpleMarkerSymbol(color, MapBaseActivity2.DEFAULT_SYMBOL_SIZE, STYLE.X);			
+				 return sms;
+			}
+
+		}
+		return s;
+	}
+		
 }
 

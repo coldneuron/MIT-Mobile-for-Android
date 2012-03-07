@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.esri.core.map.FeatureSet;
+
 import android.os.Parcel;
 import android.os.Parcelable;
 
