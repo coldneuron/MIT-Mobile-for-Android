@@ -39,8 +39,11 @@ import com.esri.core.geometry.Point;
 import com.esri.core.geometry.SpatialReference;
 import com.esri.core.map.FeatureSet;
 import com.esri.core.map.Graphic;
+import com.esri.core.symbol.LineSymbol;
 import com.esri.core.symbol.MarkerSymbol;
 import com.esri.core.symbol.PictureMarkerSymbol;
+import com.esri.core.symbol.SimpleFillSymbol;
+import com.esri.core.symbol.SimpleLineSymbol;
 import com.esri.core.symbol.SimpleMarkerSymbol;
 import com.esri.core.symbol.SimpleMarkerSymbol.STYLE;
 import com.esri.core.tasks.ags.query.Query;
@@ -102,9 +105,11 @@ public abstract class MapBaseActivity2 extends Activity {
 	// MAP LAYER INDEXES
 	// map layers are referenced by index, not by a name. reserve layers for a specific search/task
 	public static int MAP_LAYER_INDEX = 0;
-	public static int BUILDINGS_LAYER_INDEX = 1;
-	public static int KEYWORD_LAYER_INDEX = 2;
+	public static int KEYWORD_LAYER_INDEX = 1;
+	public static int BUILDINGS_LAYER_INDEX = 2;
 
+	// This map uses the search type as the key and returns an int for the layer index
+	public static Map<String, Integer> SearchTypeToLayerIndex = new HashMap();
 	
 	// Enumerated type for various map server layers
 	public enum MapServerType {
@@ -355,17 +360,20 @@ public abstract class MapBaseActivity2 extends Activity {
 		mapView.addLayer(mapServiceLayer);
 		Log.d(TAG,"mapView.addLayer(mapServiceLayer)");
 
-		// Layer 1 is the buildings layer
+		// Layer 1 is the keyword search layer
+		keywordGraphicsLayer = new GraphicsLayer();
+		mapView.addLayer(keywordGraphicsLayer);
+
+		// Layer 2 is the buildings layer
 		buildingsGraphicsLayer = new GraphicsLayer();
 		mapView.addLayer(buildingsGraphicsLayer);
 
-		// Layer 2 is the keyword search layer
-		keywordGraphicsLayer = new GraphicsLayer();
-		mapView.addLayer(keywordGraphicsLayer);
-		//Log.d(TAG,"keyword layer = " + mapView.getLayer(KEYWORD_LAYER_INDEX));
-		//Log.d(TAG,"keyword layer spatial ref = " + mapView.getLayer(KEYWORD_LAYER_INDEX).getSpatialReference());
 		
+		// Build the hash map of search types to layer indexes
+		MapBaseActivity2.SearchTypeToLayerIndex.put(MapSearchType.KEYWORD,1);
+		MapBaseActivity2.SearchTypeToLayerIndex.put(MapSearchType.CANNED_BUILDING,2);
 		
+
 		MapBaseActivity2.serverLayerMap = new HashMap<String, MapServerLayer>();
 
 		// BEGIN GPV LAYERS
@@ -579,29 +587,25 @@ public abstract class MapBaseActivity2 extends Activity {
 			// TODO Auto-generated method stub
 			List data = new ArrayList();
 			MapSearch m = params[0];
-			FeatureSet featureSet = new FeatureSet();
-//			String queryUrl;
-//			String building = "";
+			Geometry[] geometry = null;
 
 			// BUILDING SEARCH
 			if (m.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.CANNED_BUILDING)) {
-				featureSet = buildingSearch(m); // lets see if this is run synchronously 
+				//featureSet = buildingSearch(m);
+				geometry = buildingSearch(m);
 			}
-			
-			// KEYWORD SEARCH
-			if (m.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.KEYWORD)) {
-				featureSet = keywordSearch(m);
-			}
-						
+									
 			data.add(m);
-			data.add(featureSet);
+			//data.add(featureSet);
+			data.add(geometry);
 			return data;
 
 		}
 
 		// BUILDING SEARCH
-		public FeatureSet buildingSearch(MapSearch m) {
-				FeatureSet featureSet = new FeatureSet();
+		public Geometry[] buildingSearch(MapSearch m) {
+				Geometry[] geometry = null;
+				//FeatureSet featureSet = new FeatureSet();
 				String queryUrl = MapBaseActivity2.getQueryUrl(MapBaseActivity2.BUILDINGS);
 				String building = "";
 				if (m.building != null && m.building.length > 0 ) {
@@ -610,6 +614,7 @@ public abstract class MapBaseActivity2 extends Activity {
 				if (m.image == null || m.image.length() == 0) {
 					m.image = MapSymbolType.MAP_RED_PIN;
 				}
+				
 				queryTask = new QueryTask(queryUrl);
 				query = new Query();
 				query.setReturnGeometry(true);
@@ -617,99 +622,47 @@ public abstract class MapBaseActivity2 extends Activity {
 				query.setText(building);
 				try {
 					featureSet = queryTask.execute(query);
+					if (featureSet.getGraphics() != null) {
+						Log.d(TAG,"building search returned " + featureSet.getGraphics().length + " graphics");
+						 geometry = graphicsToGeometry(featureSet.getGraphics()); 
+						 Log.d(TAG,"geometry size after conversion = " + geometry.length);
+					}
 				}
 				catch (Exception e) {
 					Log.d(TAG,"exception");
 					e.printStackTrace();
-					featureSet = null;
 				}
-				return featureSet;
+				return geometry;
 		}
 				
 		@Override
 		protected void onPostExecute(List data) {
 			// TODO Auto-generated method stub
 			MapSearch m = (MapSearch)data.get(0);
-			FeatureSet result = (FeatureSet)data.get(1);
-			Geometry[] geometryList;
+			Geometry[] results = (Geometry[])data.get(1);
 			
 			// get the appropriate symbol based on the mapsearch parameters
 			MarkerSymbol markerSymbol = getMarkerSymbol(m);
 			String message = "";
 			Log.d(TAG,"onPostExecute");
-			if (result == null) {
+			if (results == null) {
 				Log.d(TAG,"result is null");
 				message = "no results found";
 			}
 			else {
-				Graphic[] highlightGraphics;
-				if (result.getGraphics() != null) {
-					Log.d(TAG,"graphics not null");	
-						// clear graphics layer
-						buildingsGraphicsLayer.removeAll();
-						
-						Graphic graphics[] = result.getGraphics();
-						geometryList = new Geometry[graphics.length];
-						message = graphics.length + " results found";
-						Log.d(TAG,"num graphics = " + graphics.length);
-						highlightGraphics = new Graphic[graphics.length];
-						
-						for (int i = 0; i < graphics.length; i++) {
-							Graphic graphic = graphics[i];
-							Geometry geometry = graphic.getGeometry();
-							geometryList[i] = geometry;
-							Log.d(TAG,"geometry type = " + geometry.getType());
-							/////////////////////////
-			                Random r = new Random();
-			                int color = Color.rgb(r.nextInt(255), r.nextInt(255), r.nextInt(255));
-			                Log.d(TAG,"color value = " + color);
-
-			                /*
-			                 * Create appropriate symbol, based on geometry type
-			                 */
-			                if (geometry.getType().name().equalsIgnoreCase("point")) {
-			                  // DEBUG
-			                  Point point = (Point)geometry;
-			                  Log.d(TAG,"building point x=" + point.getX() + " y=" + point.getY());
-			                  //DEBUG
-			                  highlightGraphics[i] = new Graphic(geometry, markerSymbol);			                
-			                } 
-			                else if (geometry.getType().name().equalsIgnoreCase("polyline")) {
-			                  //SimpleLineSymbol sls = new SimpleLineSymbol(color, 5);
-			                  //highlightGraphics[i] = new Graphic(geometry, sls);
-			                 
-			                } 
-			                else if (geometry.getType().name().equalsIgnoreCase("polygon")) {
-			                  Envelope env = new Envelope();
-			                  geometry.queryEnvelope(env);
-			            
-			                  Point point = env.getCenter();
-			                  Log.d(TAG,"building point x=" + point.getX() + " y=" + point.getY());
-
-			                  highlightGraphics[i] = new Graphic(point, markerSymbol);
-			                }
-						}
-						
-						// Add highlight graphics to graphics layer
-						buildingsGraphicsLayer.addGraphics(highlightGraphics);
-
-						// The the extent of the map to the extent of the search results
-						Geometry unionGeometry = GeometryEngine.union(geometryList,mapView.getSpatialReference());
-						mapView.setExtent(unionGeometry,100);				
-
-						Log.d(TAG,"num layers on map = " + mapView.getLayers().length);
-					}
-					else {
-						Log.d(TAG,"graphics isnull");	
-					}
-				}
-				//progress.dismiss();
-
-				Toast toast = Toast.makeText(mContext, message,
-						Toast.LENGTH_LONG);
-				toast.show();
+				message = results.length + " result found";
 			}
+
+			drawGeometry(results, 
+					     MapBaseActivity2.SearchTypeToLayerIndex.get(m.getType()), 
+					     MapSymbolType.MAP_RED_PIN,
+					     true);
+
+			Toast toast = Toast.makeText(mContext, message,
+			Toast.LENGTH_LONG);
+			toast.show();
 		}
+	}
 		
 
 
@@ -726,7 +679,24 @@ public abstract class MapBaseActivity2 extends Activity {
 	 * Query Task executes asynchronously.
 	 * 
 	 */
-
+	
+	public Geometry[] graphicsToGeometry(Graphic[] graphics ) {
+		Geometry[] geometryList;
+		if (graphics != null) {
+			geometryList = new Geometry[graphics.length];
+		
+			for (int i = 0; i < graphics.length; i++) {
+				Graphic graphic = graphics[i];
+				Geometry geometry = graphic.getGeometry();
+				geometryList[i] = geometry;
+			}
+			return geometryList;
+		}
+		else {
+			return null;
+		}
+	}
+	
 	public MarkerSymbol getMarkerSymbol(String symbol) {
 		MapSearch m = new MapSearch();
 		m.setImage(symbol);
@@ -894,10 +864,7 @@ public abstract class MapBaseActivity2 extends Activity {
 								point.setX(obj.optDouble("long_wgs84"));
 								point.setY(obj.optDouble("lat_wgs84"));
 								geometry = GeometryEngine.project(point, wgs84, mapView.getSpatialReference());
-								Point projectedPoint = (Point)geometry;
-								Point convertedPoint = toWebMercator(point.getX(),point.getY());
-								Log.d(TAG,"projected point: x=" + projectedPoint.getX() + " y=" + projectedPoint.getY());
-								Log.d(TAG,"converted point: x=" + convertedPoint.getX() + " y=" + convertedPoint.getY());
+								//Point projectedPoint = (Point)geometry;
 								Log.d(TAG,"geometry type " + i + " = " + geometry.getType().name());
 								results[i] = geometry;
 							}
@@ -911,6 +878,7 @@ public abstract class MapBaseActivity2 extends Activity {
 		});
 	}
 
+	/*
 	private Point toWebMercator(double mercatorX_lon, double mercatorY_lat)
 	{
 
@@ -930,11 +898,11 @@ public abstract class MapBaseActivity2 extends Activity {
 	    point.setY(mercatorY_lat);
 	    return point;
 	}
-
+*/
 
 	// KEYWORD SEARCH 
 	public FeatureSet keywordSearch(MapSearch m) {
-		FeatureSet featureSet = new FeatureSet();
+		//FeatureSet featureSet = new FeatureSet();
 		String[] keywords = (String[])m.getCriteria().get(MapSearch.CriteriaType.KEY_WORDS);
 		String searchTerm = keywords[0];
 
@@ -942,8 +910,8 @@ public abstract class MapBaseActivity2 extends Activity {
 
 		return null;
 	}
-
-	public void drawGeometry(Geometry[] geometry, int layer, String symbol, boolean hideOtherLayers) {
+	
+	public void drawGeometry(Geometry[] geometry, int layer, String symbol, boolean hideOtherLayers, boolean showPoints) {
 		GraphicsLayer graphicsLayer = null;
 		Graphic[] highlightGraphics;
 		MarkerSymbol markerSymbol = getMarkerSymbol(symbol);
@@ -961,7 +929,9 @@ public abstract class MapBaseActivity2 extends Activity {
 				break;
 			}
 		
-			graphicsLayer.removeAll();				
+			// remove graphics from previous search
+			graphicsLayer.removeAll();
+						
 			highlightGraphics = new Graphic[geometry.length];
 			for (int i = 0; i < geometry.length; i++) {
 				/*
@@ -972,15 +942,27 @@ public abstract class MapBaseActivity2 extends Activity {
 					highlightGraphics[i] = new Graphic(geometry[i], markerSymbol);			                
 	            } 
 	            else if (geometry[i].getType().name().equalsIgnoreCase("polyline")) {
-	                  //SimpleLineSymbol sls = new SimpleLineSymbol(color, 5);
-	                  //highlightGraphics[i] = new Graphic(geometry, sls);
+	                  SimpleLineSymbol sls = new SimpleLineSymbol(DEFAULT_SYMBOL_COLOR, 5);
+	                  highlightGraphics[i] = new Graphic(geometry[i], sls);
 	                 
 	            } 
 	            else if (geometry[i].getType().name().equalsIgnoreCase("polygon")) {
-	            	Envelope env = new Envelope();
-	                geometry[i].queryEnvelope(env);
-	                Point point = env.getCenter();
-	                highlightGraphics[i] = new Graphic(point, markerSymbol);
+	            	// If show points is set, convert the polygon to a point and add a marker at that location
+	            	if (showPoints) {
+		            	Envelope env = new Envelope();
+		                geometry[i].queryEnvelope(env);
+		                Point point = env.getCenter();
+		                highlightGraphics[i] = new Graphic(point, markerSymbol);
+	            	}
+	            	// Else, draw the polygon
+	            	else {
+	            		Log.d(TAG,"drawing simple fill symbol");
+	            		SimpleFillSymbol sfs = new SimpleFillSymbol(Color.RED);
+	            		sfs.setAlpha(75);
+		                highlightGraphics[i] = new Graphic(geometry[i], sfs);
+
+	            	}
+	     
 	            }
 			}
 				
@@ -991,23 +973,40 @@ public abstract class MapBaseActivity2 extends Activity {
 			Geometry unionGeometry = GeometryEngine.union(geometry,mapView.getSpatialReference());
 			mapView.setExtent(unionGeometry,100);
 			
+			// Set selected layer to visible
+			mapView.getLayer(layer).setVisible(true);
+			
 			// Hide other layers 
 			if (hideOtherLayers) {
-				int numLayers = mapView.getChildCount();
+				int numLayers = mapView.getLayers().length;
+				Log.d(TAG,"numLayers = " + numLayers);
+				Log.d(TAG,"selected layer = " + layer);
 				if (numLayers > 1) {
 					for (int i = 1; i < numLayers; i++) {
-						if (i != layer) {
-							mapView.getLayer(i).setVisible(false);
-						}
+						mapView.getLayer(i).setVisible(false);
 					}
 				}
 			}
+			graphicsLayer.setVisible(true);
 		}
 		else {
 			Log.d(TAG,"graphics isnull");	
 		}
 	}
 	// End Draw Geometry
+
+	// Overloaded drawGeometry methods using default values
+	public void drawGeometry(Geometry[] geometry, int layer) {
+		drawGeometry(geometry, layer, MapSymbolType.MAP_RED_PIN, true, false);	
+	}
+
+	public void drawGeometry(Geometry[] geometry, int layer, String symbol) {
+		drawGeometry(geometry, layer, symbol, true, false);	
+	}
+
+	public void drawGeometry(Geometry[] geometry, int layer, String symbol, boolean hideOtherLayers) {
+		drawGeometry(geometry, layer, symbol, hideOtherLayers, false);	
+	}
 
 	
 }

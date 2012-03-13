@@ -21,7 +21,7 @@ public class MapSearch implements Serializable {
 	public String building[]; // String array of building numbers
 	public String floor[]; // array of strings (defaults to all floors)
 	public Map<String, Object> criteria; //class: hash map of criteria such as key words, handicapped accessible, 		id required, near me, etc
-	
+	public boolean showPoints; // determines whether or not polygons (such as building and parking) should be displayed as points
 	public static class CriteriaType {
 		public static String KEY_WORDS = "KEY_WORDS";
 		public static String HANDICAPPED_ACCESSIBLE = "HANDICAPPED_ACCESSIBLE";
@@ -81,6 +81,14 @@ public class MapSearch implements Serializable {
 
 	public void setCriteria(Map<String,Object> criteria) {
 		this.criteria = criteria;
+	}
+
+	public boolean isShowPoints() {
+		return showPoints;
+	}
+
+	public void setShowPoints(boolean showPoints) {
+		this.showPoints = showPoints;
 	}
 
 }
