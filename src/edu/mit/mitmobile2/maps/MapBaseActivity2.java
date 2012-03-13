@@ -9,6 +9,7 @@ import java.util.Random;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -45,15 +46,24 @@ import com.esri.core.symbol.SimpleMarkerSymbol.STYLE;
 import com.esri.core.tasks.ags.query.Query;
 import com.esri.core.tasks.ags.query.QueryTask;
 
+import edu.mit.mitmobile2.Global;
 import edu.mit.mitmobile2.LoaderBar;
 import edu.mit.mitmobile2.MITSearchRecentSuggestions;
 import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.MobileWebApi.DefaultErrorListener;
+import edu.mit.mitmobile2.MobileWebApi.HttpClientType;
 import edu.mit.mitmobile2.MobileWebApi.JSONArrayResponseListener;
+import edu.mit.mitmobile2.classes.LoanData;
+import edu.mit.mitmobile2.facilities.FacilitiesDB;
+import edu.mit.mitmobile2.libraries.LibraryParser;
 import edu.mit.mitmobile2.maps.MapSearch;
 import edu.mit.mitmobile2.objs.MapItem;
 import edu.mit.mitmobile2.objs.SearchResults;
+import edu.mit.mitmobile2.objs.FacilitiesItem.LocationContentAltnameRecord;
+import edu.mit.mitmobile2.objs.FacilitiesItem.LocationContentCategoryRecord;
+import edu.mit.mitmobile2.objs.FacilitiesItem.LocationContentRecord;
+import edu.mit.mitmobile2.objs.FacilitiesItem.LocationRecord;
 
 public abstract class MapBaseActivity2 extends Activity {
 
@@ -62,9 +72,10 @@ public abstract class MapBaseActivity2 extends Activity {
 	protected ArcGISTiledMapServiceLayer mapServiceLayer;
 	protected GraphicsLayer mapGraphicsLayer;
 	protected GraphicsLayer buildingsGraphicsLayer;
+	protected GraphicsLayer keywordGraphicsLayer;	
 	
 	protected Context mContext;
-
+	public Handler keywordSearchHandler;
 	ProgressDialog progress;
 	MapSearch mMapSearch;
 	FeatureSet featureSet; 
@@ -72,6 +83,7 @@ public abstract class MapBaseActivity2 extends Activity {
 	QueryTask queryTask;
 	Query query;
 	Context progressContext;
+	public SpatialReference wgs84;
 
 	//*******************************************************************************************************************************************
 	// This Section Defines all the layers provided by the map server so that they can be accessed with a simple key word such as building, parking, etc
@@ -81,7 +93,6 @@ public abstract class MapBaseActivity2 extends Activity {
 	private static final String GPV_URL = "http://ims-pub.mit.edu/ArcGIS/rest/services/base/GPV/MapServer";
 	private static final String WHEREIS_150_URL = "http://ims-pub.mit.edu/ArcGIS/rest/services/base/WhereIs_150/MapServer";
 	private static final String WHEREIS_BASE_URL = "http://ims-pub.mit.edu/ArcGIS/rest/services/base/WhereIs_Base/MapServer";
-	//private static final String WHEREIS_BASE_URL = "http://mobile-dev.mit.edu";
 	private static final String WHEREIS_BASE_TOPO_URL = "http://ims-pub.mit.edu/ArcGIS/rest/services/base/WhereIs_Base_Topo/MapServer";
 	private static final String WHEREIS_BASE_TOPO_MOBILE_URL = "http://ims-pub.mit.edu/ArcGIS/rest/services/base/WhereIs_Base_Topo_Mobile/MapServer";
 	private static final String WHEREIS_MASK_URL = "http://ims-pub.mit.edu/ArcGIS/rest/services/base/WhereIs_Mask/MapServer";
@@ -92,6 +103,8 @@ public abstract class MapBaseActivity2 extends Activity {
 	// map layers are referenced by index, not by a name. reserve layers for a specific search/task
 	public static int MAP_LAYER_INDEX = 0;
 	public static int BUILDINGS_LAYER_INDEX = 1;
+	public static int KEYWORD_LAYER_INDEX = 2;
+
 	
 	// Enumerated type for various map server layers
 	public enum MapServerType {
@@ -194,6 +207,9 @@ public abstract class MapBaseActivity2 extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 	    super.onCreate(savedInstanceState);
 		mContext = this;
+		
+		wgs84 = SpatialReference.create(4326);
+
 		Log.d(TAG,"onCreate()");
 	    
 		
@@ -207,34 +223,16 @@ public abstract class MapBaseActivity2 extends Activity {
 		else {
 			Log.d(TAG,"mapView not null");			
 		}
-	    
-//    	Bundle extras = getIntent().getExtras();
-//    		    
-//        if (extras!=null){ 
-//
-//        	String action = getIntent().getAction();
-//    		if(action != null && action.equals(Intent.ACTION_SEARCH)) {
-//    			mMapSearch = (MapSearch)getIntent().getExtras().getSerializable(MapBaseActivity2.MAP_SEARCH_OBJECT);
-//    			if (mMapSearch == null) {
-//    				Log.d(TAG,"mMapSearch is null");
-//    			}
-//    			else {
-//    				Log.d(TAG,"search type = " + mMapSearch.getType());
-//    				Log.d(TAG,"performing search");
-//    				performSearch(mMapSearch);
-//    			}
-//    		}
-//
-//        }
-		/*
-        else {
-			// run a query test
-			mMapSearch = new MapSearch();
-			mMapSearch.type = MapSearchType.CANNED_BUILDING;
-			mMapSearch.building = new String[] {"32"};
-			performSearch(mMapSearch);    			
-		}
-        */	    
+
+		keywordSearchHandler = new Handler() {
+			@Override
+			public void handleMessage(Message msg) {
+				Log.d(TAG,"message = " + msg.arg1);
+				Geometry[] results = (Geometry[])msg.obj;
+				drawGeometry(results, KEYWORD_LAYER_INDEX, MapSymbolType.MAP_RED_PIN,true);
+			}		
+		};
+		
 		Object init = getLastNonConfigurationInstance();
 		if (init != null) {
 			mapView.restoreState((String) init);
@@ -252,36 +250,6 @@ public abstract class MapBaseActivity2 extends Activity {
 	
 
 	/****************************************************/
-//	protected void doSearch(final String searchTerm) {
-//		final LoaderBar loaderBar = (LoaderBar) findViewById(R.id.mapSearchLoader);
-//		loaderBar.setLoadingMessage("Searching for " + searchTerm);
-//		loaderBar.setFailedMessage("Search failed!");
-//		loaderBar.enableAnimation();
-//		loaderBar.startLoading();
-//		
-//		final Handler updateResultsUI = new Handler() {
-//			
-//			@Override
-//			public void handleMessage(Message message) {
-//				if(message.arg1 == MobileWebApi.SUCCESS) {
-//					mMapItems = MITMapsDataModel.getSearchResults(searchTerm);
-//					if(mMapItems.size() == 0) {
-//						Toast.makeText(MapBaseActivity2.this, "No matches found", Toast.LENGTH_LONG).show();
-//					}
-//					//setOverlays();
-//					loaderBar.setLastLoaded(new Date());
-//				} else {
-//					Toast.makeText(MapBaseActivity2.this, MobileWebApi.NETWORK_ERROR, Toast.LENGTH_LONG).show();
-//					loaderBar.errorLoading();
-//				}
-//			}
-//		};
-//				
-//		MITSearchRecentSuggestions suggestions = new MITSearchRecentSuggestions(this, MapsSearchSuggestionsProvider.AUTHORITY, MapsSearchSuggestionsProvider.MODE);
-//		suggestions.saveRecentQuery(searchTerm.toLowerCase(), null);
-//		
-//		MITMapsDataModel.executeSearch(searchTerm, updateResultsUI, this);
-//	}
 	/****************************************************/
 	@Override
 	public void onLowMemory() {
@@ -391,6 +359,13 @@ public abstract class MapBaseActivity2 extends Activity {
 		buildingsGraphicsLayer = new GraphicsLayer();
 		mapView.addLayer(buildingsGraphicsLayer);
 
+		// Layer 2 is the keyword search layer
+		keywordGraphicsLayer = new GraphicsLayer();
+		mapView.addLayer(keywordGraphicsLayer);
+		//Log.d(TAG,"keyword layer = " + mapView.getLayer(KEYWORD_LAYER_INDEX));
+		//Log.d(TAG,"keyword layer spatial ref = " + mapView.getLayer(KEYWORD_LAYER_INDEX).getSpatialReference());
+		
+		
 		MapBaseActivity2.serverLayerMap = new HashMap<String, MapServerLayer>();
 
 		// BEGIN GPV LAYERS
@@ -580,10 +555,14 @@ public abstract class MapBaseActivity2 extends Activity {
 	public void performSearch(MapSearch mMapSearch) {
 		Log.d(TAG,"performSearch()");
 
-		// Key Word Search
-		
+		// Keyword Search
+		if (mMapSearch.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.KEYWORD)) {
+			keywordSearch(mMapSearch);
+		}
 		// Building Search
-		runQuery(mMapSearch);
+		if (mMapSearch.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.CANNED_BUILDING)) {
+			runQuery(mMapSearch);
+		}
 	}
 	
 	private class AsyncQueryTask extends AsyncTask<MapSearch, Void, List> {
@@ -628,6 +607,9 @@ public abstract class MapBaseActivity2 extends Activity {
 				if (m.building != null && m.building.length > 0 ) {
 					building = (m.building)[0]; // ultimately, this should be an array. We;re just using the first value for testing purposes 
 				}
+				if (m.image == null || m.image.length() == 0) {
+					m.image = MapSymbolType.MAP_RED_PIN;
+				}
 				queryTask = new QueryTask(queryUrl);
 				query = new Query();
 				query.setReturnGeometry(true);
@@ -643,47 +625,7 @@ public abstract class MapBaseActivity2 extends Activity {
 				}
 				return featureSet;
 		}
-
-		// KEYWORD SEARCH 
-		public FeatureSet keywordSearch(MapSearch m) {
-			FeatureSet featureSet = new FeatureSet();
-			String[] keywords = (String[])m.getCriteria().get(MapSearch.CriteriaType.KEY_WORDS);
-			String searchTerm = keywords[0];
-			
-			// First search the whereis server to get buildings matching the keyword search
-			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("q", searchTerm);
-			params.put("command", "search");
-			MobileWebApi webApi = new MobileWebApi(false, true, "Campus map", mContext, keywordUiHandler);
-			
-			webApi.requestJSONArray("/map", params, new JSONArrayResponseListener(new DefaultErrorListener(keywordUiHandler), null) {
-				@Override
-				public void onResponse(JSONArray array) throws JSONException {
-					
-					List<MapItem> mapsItems = MapParser.parseMapItems(array);
-					
-					for (MapItem m : mapsItems) {
-						Log.d(TAG,m.bldgnum);
-					}
-										
-					MobileWebApi.sendSuccessMessage(keywordUiHandler, mapsItems);
-				}
 				
-			});
-			
-			return null;
-		}
-		
-		Handler keywordUiHandler = null;
-		
-//		HashMap<String, String> params = new HashMap<String, String>();
-//
-//		params.put("q", searchTerm);
-//		params.put("command", "search");
-//		MobileWebApi webApi = new MobileWebApi(false, true, "Campus map", context, uiHandler);
-//		webApi.requestJSONArray("/map", params, new JSONArrayResponseListener(new DefaultErrorListener(uiHandler), null) {
-
-		
 		@Override
 		protected void onPostExecute(List data) {
 			// TODO Auto-generated method stub
@@ -726,6 +668,10 @@ public abstract class MapBaseActivity2 extends Activity {
 			                 * Create appropriate symbol, based on geometry type
 			                 */
 			                if (geometry.getType().name().equalsIgnoreCase("point")) {
+			                  // DEBUG
+			                  Point point = (Point)geometry;
+			                  Log.d(TAG,"building point x=" + point.getX() + " y=" + point.getY());
+			                  //DEBUG
 			                  highlightGraphics[i] = new Graphic(geometry, markerSymbol);			                
 			                } 
 			                else if (geometry.getType().name().equalsIgnoreCase("polyline")) {
@@ -738,6 +684,7 @@ public abstract class MapBaseActivity2 extends Activity {
 			                  geometry.queryEnvelope(env);
 			            
 			                  Point point = env.getCenter();
+			                  Log.d(TAG,"building point x=" + point.getX() + " y=" + point.getY());
 
 			                  highlightGraphics[i] = new Graphic(point, markerSymbol);
 			                }
@@ -780,6 +727,12 @@ public abstract class MapBaseActivity2 extends Activity {
 	 * 
 	 */
 
+	public MarkerSymbol getMarkerSymbol(String symbol) {
+		MapSearch m = new MapSearch();
+		m.setImage(symbol);
+		return getMarkerSymbol(m);
+	}
+	
 	public MarkerSymbol getMarkerSymbol(MapSearch m) {
 		MarkerSymbol s = null;
 		int color = MapBaseActivity2.DEFAULT_SYMBOL_COLOR;
@@ -914,6 +867,148 @@ public abstract class MapBaseActivity2 extends Activity {
 		}
 		return s;
 	}
+
+
+	public void fetchKeywordResults(String searchTerm) {
+		MobileWebApi api = new MobileWebApi(false, true, "Maps", mContext, keywordSearchHandler);
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("q", searchTerm);
+		params.put("command", "search");
+		MobileWebApi webApi = new MobileWebApi(false, true, "Campus map", mContext, keywordSearchHandler);
+		webApi.requestJSONArray("/map",params, new MobileWebApi.JSONArrayResponseListener(
+	                new MobileWebApi.DefaultErrorListener(keywordSearchHandler),
+	                new MobileWebApi.DefaultCancelRequestListener(keywordSearchHandler)) {
+				@Override
+				public void onResponse(JSONArray array) {
+					Geometry geometry = null;
+					Log.d(TAG,"received keyword search response");
+					Log.d(TAG,"number of entries = " + array.length());
+					// parse response
+					if (array != null) {
+						Geometry[] results = new Geometry[array.length()];
+						for (int i = 0; i < array.length(); i++) {
+							try {
+								JSONObject obj = array.getJSONObject(i);
+								//results[i] = obj.optString("bldgnum");
+								Point point = new Point();
+								point.setX(obj.optDouble("long_wgs84"));
+								point.setY(obj.optDouble("lat_wgs84"));
+								geometry = GeometryEngine.project(point, wgs84, mapView.getSpatialReference());
+								Point projectedPoint = (Point)geometry;
+								Point convertedPoint = toWebMercator(point.getX(),point.getY());
+								Log.d(TAG,"projected point: x=" + projectedPoint.getX() + " y=" + projectedPoint.getY());
+								Log.d(TAG,"converted point: x=" + convertedPoint.getX() + " y=" + convertedPoint.getY());
+								Log.d(TAG,"geometry type " + i + " = " + geometry.getType().name());
+								results[i] = geometry;
+							}
+							catch (Exception e) {
+							}
+						}
+		                MobileWebApi.sendSuccessMessage(keywordSearchHandler,results);
+
+					}
+				}
+		});
+	}
+
+	private Point toWebMercator(double mercatorX_lon, double mercatorY_lat)
+	{
+
+		if ((Math.abs(mercatorX_lon) > 180 || Math.abs(mercatorY_lat) > 90)) {
+	        return null;
+		}
+
+	    double num = mercatorX_lon * 0.017453292519943295;
+	    double x = 6378137.0 * num;
+	    double a = mercatorY_lat * 0.017453292519943295;
+
+	    mercatorX_lon = x;
+	    mercatorY_lat = 3189068.5 * Math.log((1.0 + Math.sin(a)) / (1.0 - Math.sin(a)));
+
+	    Point point = new Point();
+	    point.setX(mercatorX_lon);
+	    point.setY(mercatorY_lat);
+	    return point;
+	}
+
+
+	// KEYWORD SEARCH 
+	public FeatureSet keywordSearch(MapSearch m) {
+		FeatureSet featureSet = new FeatureSet();
+		String[] keywords = (String[])m.getCriteria().get(MapSearch.CriteriaType.KEY_WORDS);
+		String searchTerm = keywords[0];
+
+		fetchKeywordResults(searchTerm);			
+
+		return null;
+	}
+
+	public void drawGeometry(Geometry[] geometry, int layer, String symbol, boolean hideOtherLayers) {
+		GraphicsLayer graphicsLayer = null;
+		Graphic[] highlightGraphics;
+		MarkerSymbol markerSymbol = getMarkerSymbol(symbol);
+
+		if (geometry != null) {
+			
+			// clear graphics layer
+			switch (layer) {
+				case 1:
+					graphicsLayer = buildingsGraphicsLayer;
+				break;
+				
+				case 2:
+					graphicsLayer = keywordGraphicsLayer;
+				break;
+			}
 		
+			graphicsLayer.removeAll();				
+			highlightGraphics = new Graphic[geometry.length];
+			for (int i = 0; i < geometry.length; i++) {
+				/*
+	             * Create appropriate symbol, based on geometry type
+	             */
+				if (geometry[i].getType().name().equalsIgnoreCase("point")) {
+	                Log.d(TAG,"adding point " + i + " to highlightGraphics");  
+					highlightGraphics[i] = new Graphic(geometry[i], markerSymbol);			                
+	            } 
+	            else if (geometry[i].getType().name().equalsIgnoreCase("polyline")) {
+	                  //SimpleLineSymbol sls = new SimpleLineSymbol(color, 5);
+	                  //highlightGraphics[i] = new Graphic(geometry, sls);
+	                 
+	            } 
+	            else if (geometry[i].getType().name().equalsIgnoreCase("polygon")) {
+	            	Envelope env = new Envelope();
+	                geometry[i].queryEnvelope(env);
+	                Point point = env.getCenter();
+	                highlightGraphics[i] = new Graphic(point, markerSymbol);
+	            }
+			}
+				
+			// Add highlight graphics to graphics layer
+			graphicsLayer.addGraphics(highlightGraphics);
+
+			// The the extent of the map to the extent of the search results
+			Geometry unionGeometry = GeometryEngine.union(geometry,mapView.getSpatialReference());
+			mapView.setExtent(unionGeometry,100);
+			
+			// Hide other layers 
+			if (hideOtherLayers) {
+				int numLayers = mapView.getChildCount();
+				if (numLayers > 1) {
+					for (int i = 1; i < numLayers; i++) {
+						if (i != layer) {
+							mapView.getLayer(i).setVisible(false);
+						}
+					}
+				}
+			}
+		}
+		else {
+			Log.d(TAG,"graphics isnull");	
+		}
+	}
+	// End Draw Geometry
+
+	
 }
 
