@@ -1,19 +1,15 @@
 package edu.mit.mitmobile2.maps;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
-import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
@@ -29,9 +25,12 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.esri.android.map.Callout;
 import com.esri.android.map.GraphicsLayer;
 import com.esri.android.map.MapView;
+import com.esri.android.map.PopupView;
 import com.esri.android.map.ags.ArcGISTiledMapServiceLayer;
+import com.esri.android.map.event.OnSingleTapListener;
 import com.esri.core.geometry.Envelope;
 import com.esri.core.geometry.Geometry;
 import com.esri.core.geometry.GeometryEngine;
@@ -39,7 +38,6 @@ import com.esri.core.geometry.Point;
 import com.esri.core.geometry.SpatialReference;
 import com.esri.core.map.FeatureSet;
 import com.esri.core.map.Graphic;
-import com.esri.core.symbol.LineSymbol;
 import com.esri.core.symbol.MarkerSymbol;
 import com.esri.core.symbol.PictureMarkerSymbol;
 import com.esri.core.symbol.SimpleFillSymbol;
@@ -49,24 +47,10 @@ import com.esri.core.symbol.SimpleMarkerSymbol.STYLE;
 import com.esri.core.tasks.ags.query.Query;
 import com.esri.core.tasks.ags.query.QueryTask;
 
-import edu.mit.mitmobile2.Global;
 import edu.mit.mitmobile2.LoaderBar;
-import edu.mit.mitmobile2.MITSearchRecentSuggestions;
 import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.R;
-import edu.mit.mitmobile2.MobileWebApi.DefaultErrorListener;
-import edu.mit.mitmobile2.MobileWebApi.HttpClientType;
-import edu.mit.mitmobile2.MobileWebApi.JSONArrayResponseListener;
-import edu.mit.mitmobile2.classes.LoanData;
-import edu.mit.mitmobile2.facilities.FacilitiesDB;
-import edu.mit.mitmobile2.libraries.LibraryParser;
-import edu.mit.mitmobile2.maps.MapSearch;
 import edu.mit.mitmobile2.objs.MapItem;
-import edu.mit.mitmobile2.objs.SearchResults;
-import edu.mit.mitmobile2.objs.FacilitiesItem.LocationContentAltnameRecord;
-import edu.mit.mitmobile2.objs.FacilitiesItem.LocationContentCategoryRecord;
-import edu.mit.mitmobile2.objs.FacilitiesItem.LocationContentRecord;
-import edu.mit.mitmobile2.objs.FacilitiesItem.LocationRecord;
 
 public abstract class MapBaseActivity2 extends Activity {
 
@@ -81,6 +65,7 @@ public abstract class MapBaseActivity2 extends Activity {
 	public Handler keywordSearchHandler;
 	ProgressDialog progress;
 	MapSearch mMapSearch;
+	PopupView popupView;
 	FeatureSet featureSet; 
 	String queryUrl;
 	QueryTask queryTask;
@@ -107,6 +92,7 @@ public abstract class MapBaseActivity2 extends Activity {
 	public static int MAP_LAYER_INDEX = 0;
 	public static int KEYWORD_LAYER_INDEX = 1;
 	public static int BUILDINGS_LAYER_INDEX = 2;
+	public static int ACTIVE_LAYER; // gets the index of the last searched layer
 
 	// This map uses the search type as the key and returns an int for the layer index
 	public static Map<String, Integer> SearchTypeToLayerIndex = new HashMap();
@@ -346,10 +332,8 @@ public abstract class MapBaseActivity2 extends Activity {
 	    mapView = new MapView(mContext);
 	    
 		mapView = (MapView) findViewById(R.id.map);
-		Log.d(TAG,"mapView = (MapView) findViewById(R.id.map)");
 		mapSearchLoader = (LoaderBar)findViewById(R.id.mapSearchLoader);
-		
-		
+
 		// Define Layers
 		mapServiceLayer = new ArcGISTiledMapServiceLayer(ARCGIS_SERVER_URL);
 		//mapGraphicsLayer = new GraphicsLayer();
@@ -367,6 +351,9 @@ public abstract class MapBaseActivity2 extends Activity {
 		// Layer 2 is the buildings layer
 		buildingsGraphicsLayer = new GraphicsLayer();
 		mapView.addLayer(buildingsGraphicsLayer);
+
+		// Layer 3 is a test layer
+		mapView.addLayer(new GraphicsLayer());
 
 		
 		// Build the hash map of search types to layer indexes
@@ -434,9 +421,75 @@ public abstract class MapBaseActivity2 extends Activity {
 		Log.d(TAG,"added server layer map: " + BUILDINGS);
 		// Add Landmarks Layer
 		MapBaseActivity2.serverLayerMap.put(LANDMARKS, new MapServerLayer(MapServerType.WHEREIS_BASE,"7"));
+
 		
+		mapView.setOnSingleTapListener(new OnSingleTapListener() {
+
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onSingleTap(float x, float y) {
+				// TODO Auto-generated method stub
+				Log.d(TAG,"tap " + x + "," + y);
+
+				String calloutText = "";
+				Point screenPoint = new Point(x, y);
+				Point mapPoint = mapView.toMapPoint(screenPoint);
+
+				// Get visible graphics layer - we should really be able to get the layer by the index, but for some reason the ordering is wrong
+				GraphicsLayer gl = (GraphicsLayer)mapView.getLayer(MapBaseActivity2.ACTIVE_LAYER);
+
+				// Query geometry at mapPoint
+				Log.d(TAG,"number of graphics = " + gl.getNumberOfGraphics());
+				
+				int[] gid = gl.getGraphicIDs(x,y,15);
+				
+				int numGraphics = gid.length;
+				if (gid != null ) {
+					for (int i = 0; i < gid.length; i++) {
+						Graphic g = gl.getGraphic(gid[i]);
+						String label = (String)g.getAttributeValue("name");
+						calloutText += label;
+						Log.d(TAG,"tapped graphics ID = " + gid[i]);
+					}
+				}
+				
+
+				if (numGraphics > 0 ) {
+					Callout callout = mapView.getCallout();
+					callout.setCoordinates(mapPoint);
+					//callout.setCoordinates((Point) event.getGeometry());
+					//callout.setTitle(event.getName());	
+					
+					View calloutView = getLayoutInflater().inflate(R.layout.callout, null);
+					
+					//Access the internal Textviews inside the calloutView.
+					TextView begins = (TextView) calloutView.findViewById(R.id.calloutBeginsAt);
+					
+					//Set Up values		
+					begins.setText(calloutText);		
+					//ends.setText("ends");
+					//loc.setText("loc");		
+				
+					begins.setEnabled(true);
+	
+					//Set the content, show the view
+					callout.setContent(calloutView);
+					callout.setStyle(R.xml.calloutstyle);
+					callout.refresh();
+					callout.show();
+				}
+				
+			}
+			
+		});
 	}
 
+	// END MAPINIT
+	//********************************************************************************************************************************
 	public static String getQueryUrl(String queryType) {
 		String url = null;
 		MapServerLayer mapServerLayer = (MapServerLayer) MapBaseActivity2.serverLayerMap.get(queryType);
@@ -643,6 +696,7 @@ public abstract class MapBaseActivity2 extends Activity {
 			
 			// get the appropriate symbol based on the mapsearch parameters
 			MarkerSymbol markerSymbol = getMarkerSymbol(m);
+			
 			String message = "";
 			Log.d(TAG,"onPostExecute");
 			if (results == null) {
@@ -913,7 +967,8 @@ public abstract class MapBaseActivity2 extends Activity {
 	
 	public void drawGeometry(Geometry[] geometry, int layer, String symbol, boolean hideOtherLayers, boolean showPoints) {
 		GraphicsLayer graphicsLayer = null;
-		Graphic[] highlightGraphics;
+		Graphic g = null;
+
 		MarkerSymbol markerSymbol = getMarkerSymbol(symbol);
 
 		if (geometry != null) {
@@ -921,29 +976,33 @@ public abstract class MapBaseActivity2 extends Activity {
 			// clear graphics layer
 			switch (layer) {
 				case 1:
-					graphicsLayer = buildingsGraphicsLayer;
+					graphicsLayer = keywordGraphicsLayer;
 				break;
 				
 				case 2:
-					graphicsLayer = keywordGraphicsLayer;
+					graphicsLayer = buildingsGraphicsLayer;
 				break;
 			}
 		
 			// remove graphics from previous search
 			graphicsLayer.removeAll();
-						
-			highlightGraphics = new Graphic[geometry.length];
+			
+			// hide the callout
+			mapView.getCallout().hide();
+			
 			for (int i = 0; i < geometry.length; i++) {
+				 Map<String, Object> attr = new HashMap<String, Object>();
+				 attr.put("name", "graphic " + i);
 				/*
 	             * Create appropriate symbol, based on geometry type
 	             */
 				if (geometry[i].getType().name().equalsIgnoreCase("point")) {
 	                Log.d(TAG,"adding point " + i + " to highlightGraphics");  
-					highlightGraphics[i] = new Graphic(geometry[i], markerSymbol);			                
+	                g = new Graphic(geometry[i], markerSymbol,attr,null);
 	            } 
 	            else if (geometry[i].getType().name().equalsIgnoreCase("polyline")) {
 	                  SimpleLineSymbol sls = new SimpleLineSymbol(DEFAULT_SYMBOL_COLOR, 5);
-	                  highlightGraphics[i] = new Graphic(geometry[i], sls);
+	                  g = new Graphic(geometry[i], sls,attr,null);
 	                 
 	            } 
 	            else if (geometry[i].getType().name().equalsIgnoreCase("polygon")) {
@@ -952,23 +1011,21 @@ public abstract class MapBaseActivity2 extends Activity {
 		            	Envelope env = new Envelope();
 		                geometry[i].queryEnvelope(env);
 		                Point point = env.getCenter();
-		                highlightGraphics[i] = new Graphic(point, markerSymbol);
+		                g = new Graphic(point, markerSymbol,attr,null);
 	            	}
 	            	// Else, draw the polygon
 	            	else {
 	            		Log.d(TAG,"drawing simple fill symbol");
 	            		SimpleFillSymbol sfs = new SimpleFillSymbol(Color.RED);
 	            		sfs.setAlpha(75);
-		                highlightGraphics[i] = new Graphic(geometry[i], sfs);
-
+		                g = new Graphic(geometry[i], sfs,attr,null);
 	            	}
 	     
 	            }
+		        graphicsLayer.addGraphic(g);
+				
 			}
 				
-			// Add highlight graphics to graphics layer
-			graphicsLayer.addGraphics(highlightGraphics);
-
 			// The the extent of the map to the extent of the search results
 			Geometry unionGeometry = GeometryEngine.union(geometry,mapView.getSpatialReference());
 			mapView.setExtent(unionGeometry,100);
@@ -987,7 +1044,11 @@ public abstract class MapBaseActivity2 extends Activity {
 					}
 				}
 			}
+			// Set the layer to visible
 			graphicsLayer.setVisible(true);
+			
+			// set this layer as the active layer for handling callouts
+			MapBaseActivity2.ACTIVE_LAYER = layer;
 		}
 		else {
 			Log.d(TAG,"graphics isnull");	
@@ -1008,6 +1069,38 @@ public abstract class MapBaseActivity2 extends Activity {
 		drawGeometry(geometry, layer, symbol, hideOtherLayers, false);	
 	}
 
+	public class Annotation {
+		String title = "";
+		String building = "";
+		String streetAddress = "";
+		Geometry geometry;
+		
+		public String getTitle() {
+			return title;
+		}
+		public void setTitle(String title) {
+			this.title = title;
+		}
+		public String getBuilding() {
+			return building;
+		}
+		public void setBuilding(String building) {
+			this.building = building;
+		}
+		public String getStreetAddress() {
+			return streetAddress;
+		}
+		public void setStreetAddress(String streetAddress) {
+			this.streetAddress = streetAddress;
+		}
+		public Geometry getGeometry() {
+			return geometry;
+		}
+		public void setGeometry(Geometry geometry) {
+			this.geometry = geometry;
+		}
+		
+	}
 	
 }
 
