@@ -1,11 +1,13 @@
 package edu.mit.mitmobile2.maps;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
@@ -46,6 +48,8 @@ import com.esri.core.symbol.SimpleMarkerSymbol;
 import com.esri.core.symbol.SimpleMarkerSymbol.STYLE;
 import com.esri.core.tasks.ags.query.Query;
 import com.esri.core.tasks.ags.query.QueryTask;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 
 import edu.mit.mitmobile2.LoaderBar;
 import edu.mit.mitmobile2.MobileWebApi;
@@ -219,7 +223,7 @@ public abstract class MapBaseActivity2 extends Activity {
 			@Override
 			public void handleMessage(Message msg) {
 				Log.d(TAG,"message = " + msg.arg1);
-				Geometry[] results = (Geometry[])msg.obj;
+				Annotation[] results = (Annotation[])msg.obj;
 				drawGeometry(results, KEYWORD_LAYER_INDEX, MapSymbolType.MAP_RED_PIN,true);
 			}		
 		};
@@ -351,10 +355,6 @@ public abstract class MapBaseActivity2 extends Activity {
 		// Layer 2 is the buildings layer
 		buildingsGraphicsLayer = new GraphicsLayer();
 		mapView.addLayer(buildingsGraphicsLayer);
-
-		// Layer 3 is a test layer
-		mapView.addLayer(new GraphicsLayer());
-
 		
 		// Build the hash map of search types to layer indexes
 		MapBaseActivity2.SearchTypeToLayerIndex.put(MapSearchType.KEYWORD,1);
@@ -438,7 +438,12 @@ public abstract class MapBaseActivity2 extends Activity {
 				String calloutText = "";
 				Point screenPoint = new Point(x, y);
 				Point mapPoint = mapView.toMapPoint(screenPoint);
-
+				View calloutView = getLayoutInflater().inflate(R.layout.callout, null);
+				TextView title = (TextView) calloutView.findViewById(R.id.calloutTitle);
+				TextView streetAddress = (TextView) calloutView.findViewById(R.id.calloutStreetAddress);
+				TextView building = (TextView) calloutView.findViewById(R.id.calloutBuilding);
+				TextView contents = (TextView) calloutView.findViewById(R.id.calloutContents);
+				
 				// Get visible graphics layer - we should really be able to get the layer by the index, but for some reason the ordering is wrong
 				GraphicsLayer gl = (GraphicsLayer)mapView.getLayer(MapBaseActivity2.ACTIVE_LAYER);
 
@@ -451,8 +456,17 @@ public abstract class MapBaseActivity2 extends Activity {
 				if (gid != null ) {
 					for (int i = 0; i < gid.length; i++) {
 						Graphic g = gl.getGraphic(gid[i]);
-						String label = (String)g.getAttributeValue("name");
-						calloutText += label;
+						Annotation a = getGraphicAttributes(g);	
+						title.setText(a.getTitle());
+						building.setText(a.getBuilding());
+						streetAddress.setText(a.getStreetAddress());
+						String tmpContents = "";
+						if (a.getContents() != null) {
+							for (int c = 0; c < a.getContents().length; c++) {
+								tmpContents += a.getContents()[c] + "\n";
+							}
+						}
+						contents.setText(tmpContents);
 						Log.d(TAG,"tapped graphics ID = " + gid[i]);
 					}
 				}
@@ -461,21 +475,9 @@ public abstract class MapBaseActivity2 extends Activity {
 				if (numGraphics > 0 ) {
 					Callout callout = mapView.getCallout();
 					callout.setCoordinates(mapPoint);
-					//callout.setCoordinates((Point) event.getGeometry());
-					//callout.setTitle(event.getName());	
-					
-					View calloutView = getLayoutInflater().inflate(R.layout.callout, null);
-					
-					//Access the internal Textviews inside the calloutView.
-					TextView begins = (TextView) calloutView.findViewById(R.id.calloutBeginsAt);
-					
-					//Set Up values		
-					begins.setText(calloutText);		
-					//ends.setText("ends");
-					//loc.setText("loc");		
-				
-					begins.setEnabled(true);
-	
+					callout.setMaxHeight(400);
+					callout.setMaxWidth(400);
+			
 					//Set the content, show the view
 					callout.setContent(calloutView);
 					callout.setStyle(R.xml.calloutstyle);
@@ -640,24 +642,24 @@ public abstract class MapBaseActivity2 extends Activity {
 			// TODO Auto-generated method stub
 			List data = new ArrayList();
 			MapSearch m = params[0];
-			Geometry[] geometry = null;
+			Annotation[] annotationList = null;
 
 			// BUILDING SEARCH
 			if (m.type.equalsIgnoreCase(MapBaseActivity2.MapSearchType.CANNED_BUILDING)) {
 				//featureSet = buildingSearch(m);
-				geometry = buildingSearch(m);
+				 annotationList = buildingSearch(m);
 			}
 									
 			data.add(m);
 			//data.add(featureSet);
-			data.add(geometry);
+			data.add(annotationList);
 			return data;
 
 		}
 
 		// BUILDING SEARCH
-		public Geometry[] buildingSearch(MapSearch m) {
-				Geometry[] geometry = null;
+		public Annotation[] buildingSearch(MapSearch m) {
+				Annotation[] annotationList = null;
 				//FeatureSet featureSet = new FeatureSet();
 				String queryUrl = MapBaseActivity2.getQueryUrl(MapBaseActivity2.BUILDINGS);
 				String building = "";
@@ -677,23 +679,22 @@ public abstract class MapBaseActivity2 extends Activity {
 					featureSet = queryTask.execute(query);
 					if (featureSet.getGraphics() != null) {
 						Log.d(TAG,"building search returned " + featureSet.getGraphics().length + " graphics");
-						 geometry = graphicsToGeometry(featureSet.getGraphics()); 
-						 Log.d(TAG,"geometry size after conversion = " + geometry.length);
+						 annotationList = graphicsToAnnotation(featureSet.getGraphics()); 
+						 Log.d(TAG,"geometry size after conversion = " + annotationList.length);
 					}
 				}
 				catch (Exception e) {
 					Log.d(TAG,"exception");
 					e.printStackTrace();
 				}
-				return geometry;
+				return annotationList;
 		}
 				
 		@Override
 		protected void onPostExecute(List data) {
 			// TODO Auto-generated method stub
 			MapSearch m = (MapSearch)data.get(0);
-			Geometry[] results = (Geometry[])data.get(1);
-			
+			Annotation[] results = (Annotation[])data.get(1);
 			// get the appropriate symbol based on the mapsearch parameters
 			MarkerSymbol markerSymbol = getMarkerSymbol(m);
 			
@@ -734,17 +735,28 @@ public abstract class MapBaseActivity2 extends Activity {
 	 * 
 	 */
 	
-	public Geometry[] graphicsToGeometry(Graphic[] graphics ) {
-		Geometry[] geometryList;
+	public Annotation[] graphicsToAnnotation(Graphic[] graphics ) {
+		Annotation[] annotationList;
 		if (graphics != null) {
-			geometryList = new Geometry[graphics.length];
+			Log.d(TAG,graphics.length + " graphics to be converted");
+			annotationList = new Annotation[graphics.length];
 		
 			for (int i = 0; i < graphics.length; i++) {
 				Graphic graphic = graphics[i];
-				Geometry geometry = graphic.getGeometry();
-				geometryList[i] = geometry;
+				annotationList[i] = new Annotation();
+				String[] attributes = graphic.getAttributeNames();
+				for (int a = 0; a < attributes.length; a++) {
+					Log.d(TAG,attributes[a] + " = " + graphic.getAttributeValue(attributes[a]));
+				}
+				Log.d(TAG,"adding annotation " + i);
+				String title = (String)graphic.getAttributeValue("FACILITY");
+				annotationList[i].setTitle(title);
+				Log.d(TAG,"building title = " + (String)graphic.getAttributeValue("FACILITY"));
+				annotationList[i].setGeometry(graphic.getGeometry());
+				Log.d(TAG,annotationList[i].getGeometry().getType().name());
 			}
-			return geometryList;
+			Log.d(TAG,"returning " + annotationList.length + " annotations");
+			return annotationList;
 		}
 		else {
 			return null;
@@ -909,18 +921,41 @@ public abstract class MapBaseActivity2 extends Activity {
 					Log.d(TAG,"number of entries = " + array.length());
 					// parse response
 					if (array != null) {
-						Geometry[] results = new Geometry[array.length()];
+						Annotation[] results = new Annotation[array.length()];
 						for (int i = 0; i < array.length(); i++) {
 							try {
 								JSONObject obj = array.getJSONObject(i);
+								Annotation annotation = new Annotation();
 								//results[i] = obj.optString("bldgnum");
 								Point point = new Point();
 								point.setX(obj.optDouble("long_wgs84"));
 								point.setY(obj.optDouble("lat_wgs84"));
 								geometry = GeometryEngine.project(point, wgs84, mapView.getSpatialReference());
-								//Point projectedPoint = (Point)geometry;
-								Log.d(TAG,"geometry type " + i + " = " + geometry.getType().name());
-								results[i] = geometry;
+								
+								// Set the geometry of the annotation
+								annotation.setGeometry(geometry);
+								
+								// set building
+								annotation.setBuilding(obj.optString("bldgnum"));
+
+								// set street
+								annotation.setStreetAddress(obj.optString("street"));
+								
+								// set title
+								annotation.setTitle(obj.optString("name"));
+
+								// set contents
+								JSONArray jArray = obj.getJSONArray("snippets");
+								int count = jArray.length();
+								String[] contents = new String[count];
+								for (int j = 0; j < count; j++) {
+									contents[j] = jArray.optString(j);
+								}
+								annotation.setContents(contents);
+								
+								
+								//Log.d(TAG,"geometry type " + i + " = " + geometry.getType().name());
+								results[i] = annotation;
 							}
 							catch (Exception e) {
 							}
@@ -956,7 +991,6 @@ public abstract class MapBaseActivity2 extends Activity {
 
 	// KEYWORD SEARCH 
 	public FeatureSet keywordSearch(MapSearch m) {
-		//FeatureSet featureSet = new FeatureSet();
 		String[] keywords = (String[])m.getCriteria().get(MapSearch.CriteriaType.KEY_WORDS);
 		String searchTerm = keywords[0];
 
@@ -965,13 +999,13 @@ public abstract class MapBaseActivity2 extends Activity {
 		return null;
 	}
 	
-	public void drawGeometry(Geometry[] geometry, int layer, String symbol, boolean hideOtherLayers, boolean showPoints) {
+	public void drawGeometry(Annotation[] data, int layer, String symbol, boolean hideOtherLayers, boolean showPoints) {
 		GraphicsLayer graphicsLayer = null;
 		Graphic g = null;
 
 		MarkerSymbol markerSymbol = getMarkerSymbol(symbol);
 
-		if (geometry != null) {
+		if (data != null) {
 			
 			// clear graphics layer
 			switch (layer) {
@@ -990,26 +1024,26 @@ public abstract class MapBaseActivity2 extends Activity {
 			// hide the callout
 			mapView.getCallout().hide();
 			
-			for (int i = 0; i < geometry.length; i++) {
-				 Map<String, Object> attr = new HashMap<String, Object>();
-				 attr.put("name", "graphic " + i);
+			for (int i = 0; i < data.length; i++) {
+				// add data to graphics for annotations
+				Map<String, Object> attr = addGraphicAttributes(data[i]); 
 				/*
 	             * Create appropriate symbol, based on geometry type
 	             */
-				if (geometry[i].getType().name().equalsIgnoreCase("point")) {
-	                Log.d(TAG,"adding point " + i + " to highlightGraphics");  
-	                g = new Graphic(geometry[i], markerSymbol,attr,null);
+				 
+				if (data[i].getGeometry().getType().name().equalsIgnoreCase("point")) {
+	                g = new Graphic(data[i].getGeometry(), markerSymbol,attr,null);
 	            } 
-	            else if (geometry[i].getType().name().equalsIgnoreCase("polyline")) {
+	            else if (data[i].getGeometry().getType().name().equalsIgnoreCase("polyline")) {
 	                  SimpleLineSymbol sls = new SimpleLineSymbol(DEFAULT_SYMBOL_COLOR, 5);
-	                  g = new Graphic(geometry[i], sls,attr,null);
+	                  g = new Graphic(data[i].getGeometry(), sls,attr,null);
 	                 
 	            } 
-	            else if (geometry[i].getType().name().equalsIgnoreCase("polygon")) {
+	            else if (data[i].getGeometry().getType().name().equalsIgnoreCase("polygon")) {
 	            	// If show points is set, convert the polygon to a point and add a marker at that location
 	            	if (showPoints) {
 		            	Envelope env = new Envelope();
-		                geometry[i].queryEnvelope(env);
+		            	data[i].getGeometry().queryEnvelope(env);
 		                Point point = env.getCenter();
 		                g = new Graphic(point, markerSymbol,attr,null);
 	            	}
@@ -1018,7 +1052,7 @@ public abstract class MapBaseActivity2 extends Activity {
 	            		Log.d(TAG,"drawing simple fill symbol");
 	            		SimpleFillSymbol sfs = new SimpleFillSymbol(Color.RED);
 	            		sfs.setAlpha(75);
-		                g = new Graphic(geometry[i], sfs,attr,null);
+		                g = new Graphic(data[i].getGeometry(), sfs,attr,null);
 	            	}
 	     
 	            }
@@ -1026,8 +1060,14 @@ public abstract class MapBaseActivity2 extends Activity {
 				
 			}
 				
+			// get all geometry
+			Geometry[] geometryList = new Geometry[data.length];
+			for (int d = 0; d < data.length; d++) {
+				geometryList[d] = data[d].getGeometry();
+ 			}
+			
 			// The the extent of the map to the extent of the search results
-			Geometry unionGeometry = GeometryEngine.union(geometry,mapView.getSpatialReference());
+			Geometry unionGeometry = GeometryEngine.union(geometryList,mapView.getSpatialReference());
 			mapView.setExtent(unionGeometry,100);
 			
 			// Set selected layer to visible
@@ -1057,22 +1097,27 @@ public abstract class MapBaseActivity2 extends Activity {
 	// End Draw Geometry
 
 	// Overloaded drawGeometry methods using default values
-	public void drawGeometry(Geometry[] geometry, int layer) {
-		drawGeometry(geometry, layer, MapSymbolType.MAP_RED_PIN, true, false);	
+	public void drawGeometry(Annotation[] data, int layer) {
+		drawGeometry(data, layer, MapSymbolType.MAP_RED_PIN, true, false);	
 	}
 
-	public void drawGeometry(Geometry[] geometry, int layer, String symbol) {
-		drawGeometry(geometry, layer, symbol, true, false);	
+	public void drawGeometry(Annotation[] data, int layer, String symbol) {
+		drawGeometry(data, layer, symbol, true, false);	
 	}
 
-	public void drawGeometry(Geometry[] geometry, int layer, String symbol, boolean hideOtherLayers) {
-		drawGeometry(geometry, layer, symbol, hideOtherLayers, false);	
+	public void drawGeometry(Annotation[] data, int layer, String symbol, boolean hideOtherLayers) {
+		drawGeometry(data, layer, symbol, hideOtherLayers, false);	
 	}
 
 	public class Annotation {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 		String title = "";
 		String building = "";
 		String streetAddress = "";
+		String[] contents;
 		Geometry geometry;
 		
 		public String getTitle() {
@@ -1099,8 +1144,59 @@ public abstract class MapBaseActivity2 extends Activity {
 		public void setGeometry(Geometry geometry) {
 			this.geometry = geometry;
 		}
+		public String[] getContents() {
+			return contents;
+		}
+		public void setContents(String[] contents) {
+			this.contents = contents;
+		}
 		
 	}
 	
+	public Map<String, Object> addGraphicAttributes(Annotation a) {
+		Map<String, Object> attr = new HashMap<String, Object>();
+		JSONObject j = new JSONObject();
+		JSONArray ja = new JSONArray();
+		try {
+			j.put("title", a.title);
+			j.put("building", a.building);
+			j.put("streetAddress", a.streetAddress);
+			if (a.contents != null) {
+				for (int c = 0; c < a.contents.length; c++) {
+					ja.put(c, a.contents[c]);
+				}
+				j.put("contents", ja);
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		attr.put("data",j.toString());
+		return attr;
+		
+	}
+	
+	public Annotation getGraphicAttributes(Graphic g) {
+		Annotation a = new Annotation();
+		String data = (String)g.getAttributeValue("data");
+		try {
+			JSONObject j = new JSONObject(data);
+			JSONArray ja = new JSONArray();
+			a.setTitle(j.optString("title"));
+			a.setStreetAddress(j.optString("streetAddress"));
+			a.setBuilding(j.optString("building"));
+			ja = j.optJSONArray("contents");
+			if (ja != null) {
+				a.contents = new String[ja.length()];
+				for (int c = 0; c < ja.length(); c++) {
+					a.contents[c] = ja.optString(c);
+				}
+			}
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return a;
+	}
 }
 
