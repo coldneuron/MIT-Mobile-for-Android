@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:minHeight="@dimen/minRowHeight" >
+	
+	<!--  Icon, label, checkbox --> 
+	<RelativeLayout
+  			android:id="@+id/selectLayerRowContent"
+  			android:layout_alignParentLeft="true"
+  			android:layout_width="fill_parent"
+  			android:layout_height="wrap_content"
+  			android:layout_gravity="center_vertical"
+  			android:orientation="horizontal"
+  			android:paddingLeft="@dimen/horizontalPadding"
+  			android:paddingTop="@dimen/verticalPadding"
+  			>
+  			
+		<!-- LABEL -->
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_alignParentLeft="true"
+			android:paddingTop="6dip"
+			android:paddingBottom="6dip"
+			android:paddingLeft="@dimen/horizontalPadding"
+			android:id="@+id/mapLayerTV"
+			android:textColor="@color/contents_text"
+			android:textStyle="bold"
+			android:textSize="17sp"
+			android:typeface="sans" />
+				
+		<!-- CHECKBOX -->
+   		<CheckBox 
+   			android:id="@+id/showLayerCB" 
+   			android:layout_alignParentRight="true"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content"
+   			android:checked="false" />
+   
+  	</RelativeLayout>	
+  		 		
+</FrameLayout>

@@ -60,6 +60,7 @@ public class ArcGISActivity extends MapBaseActivity2 {
 	static final int MENU_MYLOC  = Menu.FIRST+2;
 	static final int MENU_BOOKMARKS = Menu.FIRST+3;
 	static final int MENU_BROWSE = Menu.FIRST+4;
+	static final int MENU_LAYERS = Menu.FIRST+6;
 
 	// Shuttle Menu
 	static final int MENU_SHUTTLES = Menu.FIRST+5;
@@ -95,6 +96,11 @@ public class ArcGISActivity extends MapBaseActivity2 {
 			//sm.startSearch(null, false, null, false);
 			onSearchRequested();
 			break;
+			
+		case MENU_LAYERS: 
+			selectLayers();
+			break;
+	
 		case MENU_MYLOC: 
 			GeoPoint me = myLocationOverlay.getMyLocation();
 			//if (me!=null) mctrl.animateTo(me);
@@ -178,6 +184,8 @@ public class ArcGISActivity extends MapBaseActivity2 {
 			  .setIcon(R.drawable.menu_bookmarks);
 			menu.add(0, MENU_BROWSE, Menu.NONE, "Browse")
 			  .setIcon(R.drawable.menu_browse);
+			menu.add(0, MENU_LAYERS, Menu.NONE, "Layers")
+			  .setIcon(R.drawable.menu_settings);
 			
 		}
 		

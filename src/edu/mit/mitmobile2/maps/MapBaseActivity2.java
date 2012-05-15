@@ -2,6 +2,7 @@ package edu.mit.mitmobile2.maps;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +21,18 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
 
 import com.esri.android.map.Callout;
 import com.esri.android.map.GraphicsLayer;
@@ -54,6 +61,10 @@ import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 import edu.mit.mitmobile2.LoaderBar;
 import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.R;
+import edu.mit.mitmobile2.SimpleArrayAdapter;
+import edu.mit.mitmobile2.facilities.FacilitiesProblemLocationActivity;
+import edu.mit.mitmobile2.libraries.LibraryRenewBooks;
+import edu.mit.mitmobile2.objs.LoanListItem;
 import edu.mit.mitmobile2.objs.MapItem;
 
 public abstract class MapBaseActivity2 extends Activity {
@@ -76,7 +87,11 @@ public abstract class MapBaseActivity2 extends Activity {
 	Query query;
 	Context progressContext;
 	public SpatialReference wgs84;
-
+	LinearLayout layerSelector;
+	List<String> layerOptions;
+	TextView mapLayerTV; 
+	Button updateLayersButton;
+	
 	//*******************************************************************************************************************************************
 	// This Section Defines all the layers provided by the map server so that they can be accessed with a simple key word such as building, parking, etc
 
@@ -422,7 +437,9 @@ public abstract class MapBaseActivity2 extends Activity {
 		// Add Landmarks Layer
 		MapBaseActivity2.serverLayerMap.put(LANDMARKS, new MapServerLayer(MapServerType.WHEREIS_BASE,"7"));
 
-		
+		// Init Layer Options
+		initLayerOptions();
+
 		mapView.setOnSingleTapListener(new OnSingleTapListener() {
 
 			/**
@@ -1198,5 +1215,65 @@ public abstract class MapBaseActivity2 extends Activity {
 		}
 		return a;
 	}
+	
+	public void initLayerOptions() {
+		layerSelector = (LinearLayout)findViewById(R.id.layerSelector);
+		layerOptions = new ArrayList();
+		layerOptions.add("Bike Racks");
+		layerOptions.add("Athena");
+		layerOptions.add("Parking");
+		layerOptions.add("Public Art");
+
+		ArrayAdapter<String> arrAdapt= new  MapLayerOptionAdapter(layerOptions);	
+
+		
+		mListView = (ListView)findViewById(R.id.mapListView);
+		mListView.setAdapter(arrAdapt);
+		
+		/*
+		mListView.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position,
+					long id) {
+				String layerType = layerOptions.get(position);
+				Log.d(TAG,layerType + " clicked");
+			}
+		});
+*/
+		updateLayersButton = (Button)findViewById(R.id.updateLayersButton);
+		updateLayersButton.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				layerSelector.setVisibility(View.GONE);
+				mapView.setVisibility(View.VISIBLE);
+			}
+		});
+	}
+	
+	public void selectLayers() {
+		mapView.setVisibility(View.GONE);
+		layerSelector.setVisibility(View.VISIBLE);		
+	}
+
+    private class MapLayerOptionAdapter extends SimpleArrayAdapter<String> {
+        //private List<String> layerOptions;
+        public MapLayerOptionAdapter(List<String> options) {
+            super(MapBaseActivity2.this, options, R.layout.map_select_layers_action_row);
+            //layerOptions = options;
+        }
+ 
+        
+        @Override
+        public void updateView(String item, View view) {
+        	
+        	// Label
+        	mapLayerTV = (TextView)view.findViewById(R.id.mapLayerTV);
+        	Log.d(TAG,"item = " + item);
+        	mapLayerTV.setText(item);
+        }
+
+    }
+
 }
 
