@@ -2,7 +2,6 @@ package edu.mit.mitmobile2.news;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +59,8 @@ public class NewsModel {
 	static final String[] category_titles = {
 		"Top News", "Campus", "Engineering", "Science", "Management", "Architecture", "Humanties"
 	};
+	
+	final static int MAX_STORIES_PER_CAREGORY = 200;
 	
 	public static final int FETCH_SUCCESSFUL = 1;
 	public static final int FETCH_FAILED = 2;

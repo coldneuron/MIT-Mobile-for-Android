@@ -76,6 +76,14 @@
         <activity android:name=".maps.MapSearchActivity" android:launchMode="singleInstance" />
 
         
+        
+        <activity android:name=".maps.NewMapActivity">
+        	<intent-filter>
+				<action android:name="android.intent.action.SEARCH"/>
+			</intent-filter>
+			<meta-data android:name="android.app.searchable" android:resource="@xml/maps_searchable" />
+		</activity>
+		
         <activity android:name=".events.EventsTopActivity">
         	<meta-data android:name="android.app.default_searchable" android:value=".events.EventsSearchActivity" />
         </activity>
@@ -160,7 +168,7 @@
 			<meta-data android:name="android.app.default_searchable" android:value=".people.PeopleSearchActivity" />
 		</activity>
 
-		<activity android:name=".news.NewsListSliderActivity" android:theme="@style/PlainBackground" android:configChanges="orientation">
+		<activity android:name=".news.NewsListActivity" android:theme="@style/PlainBackground" android:configChanges="orientation">
 			<meta-data android:name="android.app.default_searchable" android:value=".news.NewsSearchActivity" />
 		</activity>
 		<activity android:name=".news.NewsSearchActivity" 
@@ -297,7 +305,7 @@
 	<uses-permission android:name="android.permission.READ_CONTACTS"></uses-permission>
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>	
 	
-	<uses-sdk android:minSdkVersion="7"></uses-sdk>
+	<uses-sdk android:minSdkVersion="8"></uses-sdk>
 
 <uses-permission android:name="android.permission.READ_CALENDAR"></uses-permission>
 <uses-permission android:name="android.permission.WRITE_CALENDAR"></uses-permission>

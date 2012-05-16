@@ -4,27 +4,24 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.google.zxing.client.android.CaptureActivity;
-
-import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+
 import edu.mit.mitmobile2.DateStrings;
-import edu.mit.mitmobile2.Module;
-import edu.mit.mitmobile2.ModuleActivity;
+import edu.mit.mitmobile2.NewModule;
+import edu.mit.mitmobile2.NewModuleActivity;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.SimpleArrayAdapter;
 
-public class QRReaderMainActivity extends ModuleActivity {
+public class QRReaderMainActivity extends NewModuleActivity {
 
 	private static final String QRCODES_KEY = "qrcodes";
 	private static final int MAXIMUM_SAVED_QR_CODES = 10;
@@ -117,51 +114,10 @@ public class QRReaderMainActivity extends ModuleActivity {
 	}
 	
 	@Override
-	protected Module getModule() {
-		return new QRReaderModule();
-	}
-
-	@Override
 	public boolean isModuleHomeActivity() {
 		return true;
 	}
-
-	static final int MENU_SCAN_QR = MENU_MODULE_HOME + 1;
-	static final int MENU_QR_HELP = MENU_MODULE_HOME + 2;
 	
-	@Override
-	protected void prepareActivityOptionsMenu(Menu menu) {
-		menu.add(0, MENU_SCAN_QR, Menu.NONE, "Scan")
-			.setIcon(R.drawable.menu_camera);
-		menu.add(0, MENU_QR_HELP, Menu.NONE, "Help")
-			.setIcon(R.drawable.menu_about);
-	}
-	
-	/*****************************************************************************/
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-			case MENU_SCAN_QR:
-				launchScan();
-				return true;
-				
-			case MENU_QR_HELP:
-				showDialog(DIALOG_QR_HELP);
-				break;
-		}
-		return super.onOptionsItemSelected(item);
-	}
-	
-	
-	private final static int DIALOG_QR_HELP = 1;
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		switch (id) {
-		case DIALOG_QR_HELP:
-			return CaptureActivity.helpDialog(this);
-		}
-		return null;
-	}
 	private static class QRCodeArrayAdapter extends SimpleArrayAdapter<QRCode> {
 
 		public QRCodeArrayAdapter(Context context, List<QRCode> items) {
@@ -178,5 +134,23 @@ public class QRReaderMainActivity extends ModuleActivity {
 			barcodeTitle.setText(item.getUrl());
 			barcodeSubtitle.setText(DateStrings.agoString(item.getDate()));
 		}
+	}
+
+	@Override
+	protected NewModule getNewModule() {
+		// TODO Auto-generated method stub
+		return new QRReaderModule();
+	}
+
+	@Override
+	protected boolean isScrollable() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	protected void onOptionSelected(String optionId) {
+		// TODO Auto-generated method stub
+		
 	}
 }
