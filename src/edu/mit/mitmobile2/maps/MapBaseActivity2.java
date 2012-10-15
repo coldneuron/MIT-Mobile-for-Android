@@ -1,8 +1,6 @@
 package edu.mit.mitmobile2.maps;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,23 +19,21 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
 
 import com.esri.android.map.Callout;
 import com.esri.android.map.GraphicsLayer;
 import com.esri.android.map.MapView;
 import com.esri.android.map.PopupView;
+import com.esri.android.map.ags.ArcGISFeatureLayer;
 import com.esri.android.map.ags.ArcGISTiledMapServiceLayer;
 import com.esri.android.map.event.OnSingleTapListener;
 import com.esri.core.geometry.Envelope;
@@ -55,28 +51,31 @@ import com.esri.core.symbol.SimpleMarkerSymbol;
 import com.esri.core.symbol.SimpleMarkerSymbol.STYLE;
 import com.esri.core.tasks.ags.query.Query;
 import com.esri.core.tasks.ags.query.QueryTask;
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.io.json.JsonHierarchicalStreamDriver;
 
 import edu.mit.mitmobile2.LoaderBar;
 import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.SimpleArrayAdapter;
-import edu.mit.mitmobile2.facilities.FacilitiesProblemLocationActivity;
-import edu.mit.mitmobile2.libraries.LibraryRenewBooks;
-import edu.mit.mitmobile2.objs.LoanListItem;
+import edu.mit.mitmobile2.classes.MapBaseLayer;
+import edu.mit.mitmobile2.classes.MapFeatureLayer;
+import edu.mit.mitmobile2.classes.MapLayer;
+import edu.mit.mitmobile2.classes.MapServerData;
 import edu.mit.mitmobile2.objs.MapItem;
 
 public abstract class MapBaseActivity2 extends Activity {
 
 	private static final String TAG = "MapBaseActivity2"; 
 	protected MapView mapView;
+	protected static MapServerData mapServerData;
 	protected ArcGISTiledMapServiceLayer mapServiceLayer;
+	protected ArcGISFeatureLayer mapFeatureLayer;
+
 	protected GraphicsLayer mapGraphicsLayer;
 	protected GraphicsLayer buildingsGraphicsLayer;
 	protected GraphicsLayer keywordGraphicsLayer;	
 	
 	protected Context mContext;
+	//public Handler uiHandler;
 	public Handler keywordSearchHandler;
 	ProgressDialog progress;
 	MapSearch mMapSearch;
@@ -91,7 +90,41 @@ public abstract class MapBaseActivity2 extends Activity {
 	List<String> layerOptions;
 	TextView mapLayerTV; 
 	Button updateLayersButton;
-	
+
+    private Handler bootstrapHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+			Log.d(TAG,"received bootstrap message");
+			MapBaseActivity2.mapServerData = (MapServerData)msg.obj;
+			
+			// Add base map
+			for (int i = 0; i < MapBaseActivity2.mapServerData.getBaseMaps().size(); i++) {
+				MapBaseLayer layer = MapBaseActivity2.mapServerData.getBaseMaps().get(i);
+				if (layer.isEnabled()) {
+					mapServiceLayer = new ArcGISTiledMapServiceLayer(layer.getUrl());
+					mapView.addLayer(mapServiceLayer);
+				}
+			}	
+			
+			// Add feature maps
+			Log.d(TAG,"num feature layers = " + MapBaseActivity2.mapServerData.getFeatures().size());
+			for (int i = 0; i < MapBaseActivity2.mapServerData.getFeatures().size(); i++) {
+				MapFeatureLayer layer = (MapFeatureLayer)MapBaseActivity2.mapServerData.getFeatures().get(i);
+
+				Log.d(TAG,"feature layer = " + layer.getUrl());
+				Log.d(TAG,"isTiled = " + layer.isTiledLayer());
+				if (layer.isTiledLayer()) {
+					ArcGISTiledMapServiceLayer mapLayer = new ArcGISTiledMapServiceLayer(layer.getUrl());
+					mapView.addLayer(mapLayer);
+				}
+				else {
+					ArcGISFeatureLayer mapLayer = new ArcGISFeatureLayer(layer.getUrl(),ArcGISFeatureLayer.MODE.SNAPSHOT);
+					mapView.addLayer(mapLayer);
+				}
+			}	
+					
+        }
+    };
 	//*******************************************************************************************************************************************
 	// This Section Defines all the layers provided by the map server so that they can be accessed with a simple key word such as building, parking, etc
 
@@ -224,7 +257,6 @@ public abstract class MapBaseActivity2 extends Activity {
 	    
 		
 		//mapView.setBuiltInZoomControls(true);	
-
 		// Initialize Map View
 		if (mapView == null) {
 			Log.d(TAG,"initializing mapView");
@@ -233,7 +265,7 @@ public abstract class MapBaseActivity2 extends Activity {
 		else {
 			Log.d(TAG,"mapView not null");			
 		}
-
+	
 		keywordSearchHandler = new Handler() {
 			@Override
 			public void handleMessage(Message msg) {
@@ -242,6 +274,7 @@ public abstract class MapBaseActivity2 extends Activity {
 				drawGeometry(results, KEYWORD_LAYER_INDEX, MapSymbolType.MAP_RED_PIN,true);
 			}		
 		};
+
 		
 		Object init = getLastNonConfigurationInstance();
 		if (init != null) {
@@ -353,92 +386,95 @@ public abstract class MapBaseActivity2 extends Activity {
 		mapView = (MapView) findViewById(R.id.map);
 		mapSearchLoader = (LoaderBar)findViewById(R.id.mapSearchLoader);
 
+		// Get Bootstrap Data
+		bootstrap();
+		
 		// Define Layers
-		mapServiceLayer = new ArcGISTiledMapServiceLayer(ARCGIS_SERVER_URL);
+		//mapServiceLayer = new ArcGISTiledMapServiceLayer(ARCGIS_SERVER_URL);
 		//mapGraphicsLayer = new GraphicsLayer();
 
 		// Add Layers
 
 		//Layer 0 is the map layer
-		mapView.addLayer(mapServiceLayer);
-		Log.d(TAG,"mapView.addLayer(mapServiceLayer)");
+		//mapView.addLayer(mapServiceLayer);
+		//Log.d(TAG,"mapView.addLayer(mapServiceLayer)");
 
 		// Layer 1 is the keyword search layer
-		keywordGraphicsLayer = new GraphicsLayer();
-		mapView.addLayer(keywordGraphicsLayer);
+		//keywordGraphicsLayer = new GraphicsLayer();
+		//mapView.addLayer(keywordGraphicsLayer);
 
 		// Layer 2 is the buildings layer
-		buildingsGraphicsLayer = new GraphicsLayer();
-		mapView.addLayer(buildingsGraphicsLayer);
+		//buildingsGraphicsLayer = new GraphicsLayer();
+		//mapView.addLayer(buildingsGraphicsLayer);
 		
 		// Build the hash map of search types to layer indexes
-		MapBaseActivity2.SearchTypeToLayerIndex.put(MapSearchType.KEYWORD,1);
-		MapBaseActivity2.SearchTypeToLayerIndex.put(MapSearchType.CANNED_BUILDING,2);
+		//MapBaseActivity2.SearchTypeToLayerIndex.put(MapSearchType.KEYWORD,1);
+		//MapBaseActivity2.SearchTypeToLayerIndex.put(MapSearchType.CANNED_BUILDING,2);
 		
 
-		MapBaseActivity2.serverLayerMap = new HashMap<String, MapServerLayer>();
+		//MapBaseActivity2.serverLayerMap = new HashMap<String, MapServerLayer>();
 
 		// BEGIN GPV LAYERS
 		
 		// Add Trees Layer
-		MapBaseActivity2.serverLayerMap.put(TREES, new MapServerLayer(MapServerType.GPV,"6"));
+		//MapBaseActivity2.serverLayerMap.put(TREES, new MapServerLayer(MapServerType.GPV,"6"));
 
 		// Add Stairs Layer
-		MapBaseActivity2.serverLayerMap.put(STAIRS, new MapServerLayer(MapServerType.GPV,"10"));
+		//MapBaseActivity2.serverLayerMap.put(STAIRS, new MapServerLayer(MapServerType.GPV,"10"));
 		
 		// Add Buildings Other Layer
-		MapBaseActivity2.serverLayerMap.put(BUILDINGS_OTHER, new MapServerLayer(MapServerType.GPV,"14"));
-
-		// Add Buildings Other Dropshadow Layer
-		MapBaseActivity2.serverLayerMap.put(BUILDINGS_OTHER_DROPSHADOW, new MapServerLayer(MapServerType.GPV,"15"));
-
-		// Add Sport Layer
-		MapBaseActivity2.serverLayerMap.put(SPORT, new MapServerLayer(MapServerType.GPV,"18"));
-
-		// Add Sidewalk Layer
-		MapBaseActivity2.serverLayerMap.put(SIDEWALK, new MapServerLayer(MapServerType.GPV,"19"));
-
-		// Add Pavement Markings Layer
-		MapBaseActivity2.serverLayerMap.put(PAVEMENT_MARKINGS, new MapServerLayer(MapServerType.GPV,"20"));
-
-		// Add Parking Layer
-		MapBaseActivity2.serverLayerMap.put(PARKING, new MapServerLayer(MapServerType.GPV,"21"));
-
-		// Add Grass Layer
-		MapBaseActivity2.serverLayerMap.put(GRASS, new MapServerLayer(MapServerType.GPV,"22"));
-
-		// Add Walkway Layer
-		MapBaseActivity2.serverLayerMap.put(WALKWAY, new MapServerLayer(MapServerType.GPV,"23"));
-
-		// Add Parking Lots Layer
-		MapBaseActivity2.serverLayerMap.put(PARKING_LOTS, new MapServerLayer(MapServerType.GPV,"24"));
-
-		// Add Blocks Layer
-		MapBaseActivity2.serverLayerMap.put(BLOCKS, new MapServerLayer(MapServerType.GPV,"26"));
-
-		// END GPV LAYERS
-		
-		// BEGIN WHEREIS_BASE LAYERS
-		
-		// T_STOPS_LARGE
-		MapBaseActivity2.serverLayerMap.put(T_STOPS_LARGE, new MapServerLayer(MapServerType.WHEREIS_BASE,"5"));
-
-		// T_STOPS_SMALL
-		MapBaseActivity2.serverLayerMap.put(T_STOPS_SMALL, new MapServerLayer(MapServerType.WHEREIS_BASE,"6"));
-
-		// BUILDING_NAMES
-		MapBaseActivity2.serverLayerMap.put(BUILDING_NAMES, new MapServerLayer(MapServerType.WHEREIS_BASE,"3"));
-		
-		// END WHEREIS_BASE LAYERS
-		
-		// Add Buildings Layer
-		MapBaseActivity2.serverLayerMap.put(BUILDINGS, new MapServerLayer(MapServerType.WHEREIS_BASE,"9"));
-		Log.d(TAG,"added server layer map: " + BUILDINGS);
-		// Add Landmarks Layer
-		MapBaseActivity2.serverLayerMap.put(LANDMARKS, new MapServerLayer(MapServerType.WHEREIS_BASE,"7"));
-
-		// Init Layer Options
-		initLayerOptions();
+//		MapBaseActivity2.serverLayerMap.put(BUILDINGS_OTHER, new MapServerLayer(MapServerType.GPV,"14"));
+//
+//		// Add Buildings Other Dropshadow Layer
+//		MapBaseActivity2.serverLayerMap.put(BUILDINGS_OTHER_DROPSHADOW, new MapServerLayer(MapServerType.GPV,"15"));
+//
+//		// Add Sport Layer
+//		MapBaseActivity2.serverLayerMap.put(SPORT, new MapServerLayer(MapServerType.GPV,"18"));
+//
+//		// Add Sidewalk Layer
+//		MapBaseActivity2.serverLayerMap.put(SIDEWALK, new MapServerLayer(MapServerType.GPV,"19"));
+//
+//		// Add Pavement Markings Layer
+//		MapBaseActivity2.serverLayerMap.put(PAVEMENT_MARKINGS, new MapServerLayer(MapServerType.GPV,"20"));
+//
+//		// Add Parking Layer
+//		MapBaseActivity2.serverLayerMap.put(PARKING, new MapServerLayer(MapServerType.GPV,"21"));
+//
+//		// Add Grass Layer
+//		MapBaseActivity2.serverLayerMap.put(GRASS, new MapServerLayer(MapServerType.GPV,"22"));
+//
+//		// Add Walkway Layer
+//		MapBaseActivity2.serverLayerMap.put(WALKWAY, new MapServerLayer(MapServerType.GPV,"23"));
+//
+//		// Add Parking Lots Layer
+//		MapBaseActivity2.serverLayerMap.put(PARKING_LOTS, new MapServerLayer(MapServerType.GPV,"24"));
+//
+//		// Add Blocks Layer
+//		MapBaseActivity2.serverLayerMap.put(BLOCKS, new MapServerLayer(MapServerType.GPV,"26"));
+//
+//		// END GPV LAYERS
+//		
+//		// BEGIN WHEREIS_BASE LAYERS
+//		
+//		// T_STOPS_LARGE
+//		MapBaseActivity2.serverLayerMap.put(T_STOPS_LARGE, new MapServerLayer(MapServerType.WHEREIS_BASE,"5"));
+//
+//		// T_STOPS_SMALL
+//		MapBaseActivity2.serverLayerMap.put(T_STOPS_SMALL, new MapServerLayer(MapServerType.WHEREIS_BASE,"6"));
+//
+//		// BUILDING_NAMES
+//		MapBaseActivity2.serverLayerMap.put(BUILDING_NAMES, new MapServerLayer(MapServerType.WHEREIS_BASE,"3"));
+//		
+//		// END WHEREIS_BASE LAYERS
+//		
+//		// Add Buildings Layer
+//		MapBaseActivity2.serverLayerMap.put(BUILDINGS, new MapServerLayer(MapServerType.WHEREIS_BASE,"9"));
+//		Log.d(TAG,"added server layer map: " + BUILDINGS);
+//		// Add Landmarks Layer
+//		MapBaseActivity2.serverLayerMap.put(LANDMARKS, new MapServerLayer(MapServerType.WHEREIS_BASE,"7"));
+//
+//		// Init Layer Options
+//		initLayerOptions();
 
 		mapView.setOnSingleTapListener(new OnSingleTapListener() {
 
@@ -553,6 +589,7 @@ public abstract class MapBaseActivity2 extends Activity {
 	
 	public static final String MAP_SEARCH_OBJECT = "MAP_SEARCH_OBJECT";
 	public static final String RETURN_ACTIVITY = "RETURN_ACTIVITY";
+	
 	
 	public static class MapSearchType {
 	    public static final String KEYWORD = "KEYWORD";
@@ -1275,5 +1312,10 @@ public abstract class MapBaseActivity2 extends Activity {
 
     }
 
+    private void bootstrap() {
+    	Log.d(TAG,"start bootstrap");
+    	MapModel.fetchMapServerData(mContext, bootstrapHandler);
+    	Log.d(TAG,"after bootstrap");
+    }
 }
 
