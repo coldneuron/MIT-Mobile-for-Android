@@ -5,10 +5,10 @@ import java.io.IOException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
-import edu.mit.mitmobile2.MobileWebApi.HttpClientType;
 
 import android.content.Context;
 import android.util.Log;
+import edu.mit.mitmobile2.MobileWebApi.HttpClientType;
 
 public class MITConnectionWrapper extends ConnectionWrapper {
 

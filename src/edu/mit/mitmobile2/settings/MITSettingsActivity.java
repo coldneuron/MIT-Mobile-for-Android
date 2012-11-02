@@ -1,19 +1,20 @@
 package edu.mit.mitmobile2.settings;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
-import edu.mit.mitmobile2.HomeScreenActivity;
+import edu.mit.mitmobile2.MITNewsWidgetActivity;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.TwoLineActionRow;
 import edu.mit.mitmobile2.maps.ArcGISActivity;
 import edu.mit.mitmobile2.touchstone.TouchstonePrefsActivity;
 
-public class MITSettingsActivity extends NewModuleActivity {
+public class MITSettingsActivity extends Activity {
 	
 
 	private Context mContext;			
@@ -57,24 +58,28 @@ public class MITSettingsActivity extends NewModuleActivity {
 		
 		
 	}
-
+	
+	static final int HOME_ITEM_ID = 0;
 	@Override
-	protected NewModule getNewModule() {
-		return new SettingsModule();
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		
+		menu.clear();
+		
+		menu.add(0, HOME_ITEM_ID, Menu.NONE, "Home")
+			.setIcon(R.drawable.menu_home);
+		
+		return super.onPrepareOptionsMenu(menu);
 	}
-
-	protected boolean isScrollable() {
-		return false;
-	}
-
+	
 	@Override
-	protected void onOptionSelected(String optionId) {
-
-	}
-
-	@Override
-	protected boolean isModuleHomeActivity() {
-	    return true;
+	public boolean onOptionsItemSelected(MenuItem item) {
+		
+		switch (item.getItemId()) {
+			case HOME_ITEM_ID: 
+				MITNewsWidgetActivity.goHome(this);
+				return true;		}
+			
+		return super.onOptionsItemSelected(item);
 	}
 
 }

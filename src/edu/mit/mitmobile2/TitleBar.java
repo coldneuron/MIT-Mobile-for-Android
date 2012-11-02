@@ -54,7 +54,7 @@ public class TitleBar extends LinearLayout {
 		findViewById(R.id.titleBarHomeButton).setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				HomeScreenActivity.goHome(context);
+				MITNewsWidgetActivity.goHome(context);
 			}
 		});
 	}

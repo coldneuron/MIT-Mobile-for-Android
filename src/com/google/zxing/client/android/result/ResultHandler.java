@@ -16,12 +16,13 @@
 
 package com.google.zxing.client.android.result;
 
-import com.google.zxing.Result;
-import com.google.zxing.client.android.Contents;
-import com.google.zxing.client.android.LocaleManager;
-import edu.mit.mitmobile2.R;
-import com.google.zxing.client.result.ParsedResult;
-import com.google.zxing.client.result.ParsedResultType;
+import java.text.DateFormat;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
@@ -29,12 +30,14 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.provider.Contacts;
-import java.text.DateFormat;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+
+import com.google.zxing.Result;
+import com.google.zxing.client.android.Contents;
+import com.google.zxing.client.android.LocaleManager;
+import com.google.zxing.client.result.ParsedResult;
+import com.google.zxing.client.result.ParsedResultType;
+
+import edu.mit.mitmobile2.R;
 
 /**
  * A base class for the Android-specific barcode handlers. These allow the app to polymorphically
@@ -46,12 +49,14 @@ import java.util.GregorianCalendar;
  *
  * @author dswitkin@google.com (Daniel Switkin)
  */
+@SuppressWarnings("deprecation")
 public abstract class ResultHandler {
   private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
   private static final DateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyyMMdd'T'HHmmss");
 
   private static final String GOOGLE_SHOPPER_PACKAGE = "com.google.android.apps.shopper";
-  private static final String GOOGLE_SHOPPER_ACTIVITY = GOOGLE_SHOPPER_PACKAGE +
+  @SuppressWarnings("unused")
+private static final String GOOGLE_SHOPPER_ACTIVITY = GOOGLE_SHOPPER_PACKAGE +
       ".results.SearchResultsActivity";
   private static final String MARKET_URI_PREFIX = "market://search?q=pname:";
   private static final String MARKET_REFERRER_SUFFIX =
@@ -64,7 +69,8 @@ public abstract class ResultHandler {
   private final Result rawResult;
   private final String customProductSearch;
 
-  private final DialogInterface.OnClickListener shopperMarketListener =
+  @SuppressWarnings("unused")
+private final DialogInterface.OnClickListener shopperMarketListener =
       new DialogInterface.OnClickListener() {
     public void onClick(DialogInterface dialogInterface, int which) {
       launchIntent(new Intent(Intent.ACTION_VIEW, Uri.parse(MARKET_URI_PREFIX +

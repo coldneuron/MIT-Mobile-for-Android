@@ -47,7 +47,7 @@ public final class ByQuadrantReader implements Reader {
     return decode(image, null);
   }
 
-  public Result decode(BinaryBitmap image, Hashtable hints)
+  public Result decode(BinaryBitmap image, @SuppressWarnings("rawtypes") Hashtable hints)
       throws NotFoundException, ChecksumException, FormatException {
 
     int width = image.getWidth();

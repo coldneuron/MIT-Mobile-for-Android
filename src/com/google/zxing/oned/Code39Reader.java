@@ -91,7 +91,7 @@ public final class Code39Reader extends OneDReader {
     this.extendedMode = extendedMode;
   }
 
-  public Result decodeRow(int rowNumber, BitArray row, Hashtable hints)
+  public Result decodeRow(int rowNumber, BitArray row, @SuppressWarnings("rawtypes") Hashtable hints)
       throws NotFoundException, ChecksumException, FormatException {
 
     int[] start = findAsteriskPattern(row);

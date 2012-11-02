@@ -32,7 +32,7 @@ public final class Code128Writer extends UPCEANWriter {
                             BarcodeFormat format,
                             int width,
                             int height,
-                            Hashtable hints) throws WriterException {
+                            @SuppressWarnings("rawtypes") Hashtable hints) throws WriterException {
       if (format != BarcodeFormat.CODE_128) {
         throw new IllegalArgumentException("Can only encode CODE_128, but got " + format);
       }

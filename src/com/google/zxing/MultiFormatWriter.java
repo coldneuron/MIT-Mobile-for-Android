@@ -41,7 +41,7 @@ public final class MultiFormatWriter implements Writer {
   }
 
   public BitMatrix encode(String contents, BarcodeFormat format, int width, int height,
-      Hashtable hints) throws WriterException {
+      @SuppressWarnings("rawtypes") Hashtable hints) throws WriterException {
 
     Writer writer;
     if (format == BarcodeFormat.EAN_8) {

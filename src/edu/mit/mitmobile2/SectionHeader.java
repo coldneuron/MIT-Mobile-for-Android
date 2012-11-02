@@ -4,12 +4,15 @@ import edu.mit.mitmobile2.about.BuildSettings;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 
 public class SectionHeader extends FrameLayout {
 	private TextView mTextView;
+	private ImageView mBackgroundView;
 	
 	public enum Prominence {
 		PRIMARY,
@@ -35,6 +38,10 @@ public class SectionHeader extends FrameLayout {
 		initializeHelper(context, initialText, prominence);
 	}
 	
+	public void setBackgroundResourceId(int resourceId) {
+		mBackgroundView.setImageResource(resourceId);
+	}
+	
 	private void initializeHelper(Context context, String initialText, Prominence prominence) {
 		LayoutInflater inflator = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		inflator.inflate(R.layout.section_header, this);
@@ -42,14 +49,18 @@ public class SectionHeader extends FrameLayout {
 		mTextView = (TextView) findViewById(R.id.sectionHeaderTV);
 		mTextView.setText(initialText);
 		
+		mBackgroundView = (ImageView) findViewById(R.id.sectionHeaderBackgroundIV);
 		
-		int color = -1;
 		if(prominence == Prominence.PRIMARY) {
-		    color = context.getResources().getColor(R.color.primarySectionHeaderBackground);
+			setBackgroundResourceId(R.drawable.list_subhead);
 		} else if(prominence == Prominence.SECONDARY) {
-		    color = context.getResources().getColor(R.color.secondarySectionHeaderBackground);
+			setBackgroundResourceId(R.drawable.list_subhead_gray);
 		}
-		setBackgroundColor(color);
+		
+		int height = mBackgroundView.getDrawable().getIntrinsicHeight();
+		LayoutParams params = new LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, height);
+		findViewById(R.id.sectionHeaderWrapper)
+			.setLayoutParams(params);
 	}
 	
 	public void setText(String text) {

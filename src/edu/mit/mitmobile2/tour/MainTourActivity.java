@@ -1,19 +1,22 @@
 package edu.mit.mitmobile2.tour;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import edu.mit.mitmobile2.CommonActions;
 import edu.mit.mitmobile2.FullScreenLoader;
 import edu.mit.mitmobile2.MobileWebApi;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
 
-public class MainTourActivity extends NewModuleActivity {
+public class MainTourActivity extends ModuleActivity {
 	
 	FullScreenLoader mLoader;
 	TextView mIntroductionView;
@@ -79,16 +82,27 @@ public class MainTourActivity extends NewModuleActivity {
 	};
 	
 	@Override
-	protected NewModule getNewModule() {
+	protected Module getModule() {
 		return new TourModule();
 	}
 
 	@Override
 	public boolean isModuleHomeActivity() {
 		return true;
-	}	
+	}
 
-	/*
+	static final int MENU_SCAN_QR = MENU_MODULE_HOME + 1;
+	static final int MENU_SHOW_TOUR_MAP = MENU_MODULE_HOME + 4;
+	
+	@Override
+	protected void prepareActivityOptionsMenu(Menu menu) {
+		if(mTourAvailable) {
+			menu.add(0, MENU_SHOW_TOUR_MAP, Menu.NONE, "Tour Map")
+				.setIcon(R.drawable.menu_maps);
+		}
+		//menu.add(0, MENU_SCAN_QR, Menu.NONE, "Scan QR Code");
+	}
+	/*****************************************************************************/
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		Intent i;
@@ -106,6 +120,8 @@ public class MainTourActivity extends NewModuleActivity {
 		return super.onOptionsItemSelected(item);
 	}
 	
+
+	/*****************************************************************************/
 	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		if (requestCode == 0) {
@@ -126,17 +142,4 @@ public class MainTourActivity extends NewModuleActivity {
 	    builder.setPositiveButton("OK", null);
 	    builder.show();
 	  }
-	*/
-
-	@Override
-	protected boolean isScrollable() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	protected void onOptionSelected(String optionId) {
-		// TODO Auto-generated method stub
-		
-	}
 }

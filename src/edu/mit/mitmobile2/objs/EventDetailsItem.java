@@ -99,7 +99,7 @@ public class EventDetailsItem {
             summary += " " + time;
         }
         
-        return summary.trim();
+        return summary;
     }
 	
 	public Date getStartDate() {

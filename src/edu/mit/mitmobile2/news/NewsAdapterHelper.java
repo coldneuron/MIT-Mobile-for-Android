@@ -11,8 +11,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TextView;
 import edu.mit.mitmobile2.R;
-import edu.mit.mitmobile2.TruncatingTextView;
 import edu.mit.mitmobile2.objs.NewsItem;
 
 public class NewsAdapterHelper  {
@@ -36,13 +36,11 @@ public class NewsAdapterHelper  {
 	public void populateView(View view, final NewsItem newsItem, boolean saveThumbnail) {
 		if (newsItem != null) {
 			view.setTag(new Integer(newsItem.story_id));
-			TruncatingTextView newsTitleTV = (TruncatingTextView) view.findViewById(R.id.newsRowTV);
+			TextView newsTitleTV = (TextView) view.findViewById(R.id.newsRowTV);
 			newsTitleTV.setText(newsItem.title);
-			newsTitleTV.requestLayout();
 			
-			TruncatingTextView newsDeckTV = (TruncatingTextView) view.findViewById(R.id.newsRowDeckTV);
+			TextView newsDeckTV = (TextView) view.findViewById(R.id.newsRowDeckTV);
 			newsDeckTV.setText(newsItem.description);
-			newsDeckTV.requestLayout();
 			//Log.d(TAG,"description = " + newsItem.description);
 			
 			// ImageView

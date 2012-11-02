@@ -1,6 +1,5 @@
 package edu.mit.mitmobile2;
 
-import edu.mit.mitmobile2.about.BuildSettings;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -11,6 +10,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.provider.BaseColumns;
+import edu.mit.mitmobile2.about.BuildSettings;
 
 public class WebImageCacheProvider extends ContentProvider {
 	

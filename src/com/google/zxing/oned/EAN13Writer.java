@@ -37,7 +37,7 @@ public final class EAN13Writer extends UPCEANWriter {
       3; // end guard
 
   public BitMatrix encode(String contents, BarcodeFormat format, int width, int height,
-      Hashtable hints) throws WriterException {
+      @SuppressWarnings("rawtypes") Hashtable hints) throws WriterException {
     if (format != BarcodeFormat.EAN_13) {
       throw new IllegalArgumentException("Can only encode EAN_13, but got " + format);
     }

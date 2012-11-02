@@ -1,17 +1,13 @@
 package edu.mit.mitmobile2.libraries;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.TextView;
 import edu.mit.mitmobile2.FullScreenLoader;
-import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
@@ -22,7 +18,8 @@ public class LibraryFineDetail extends ModuleActivity{
 	public static final String TAG = "LibraryFineDetail";
 
     Context mContext;
-    private FullScreenLoader mLoadingView;
+    @SuppressWarnings("unused")
+	private FullScreenLoader mLoadingView;
     private TitleBar fineTitleBar;
 	private TextView fineTitleTV;
     private TextView fineAuthorTV;
@@ -72,7 +69,7 @@ public class LibraryFineDetail extends ModuleActivity{
     	mLoadingView = (FullScreenLoader) findViewById(R.id.librarySearchLoading);
 
     }
-
+/*
     private void doSearch(String barcode) {
 
         mLoadingView.setVisibility(View.VISIBLE);
@@ -107,7 +104,7 @@ public class LibraryFineDetail extends ModuleActivity{
             }
         }
     };
-
+*/
 	@Override
 	protected Module getModule() {
 		return new LibrariesModule();

@@ -1,18 +1,12 @@
 package edu.mit.mitmobile2.libraries;
 
-
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.text.Html;
-import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import edu.mit.mitmobile2.FullScreenLoader;
-import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
@@ -22,7 +16,6 @@ public class LibraryRenewDetail extends ModuleActivity{
 	public static final String TAG = "LibraryRenewDetail";
 
     Context mContext;
-    private FullScreenLoader mLoadingView;
 	private TextView renewTitleTV;
     private TextView renewAuthorTV;
 	private TextView renewOverdueTV;
@@ -31,7 +24,9 @@ public class LibraryRenewDetail extends ModuleActivity{
 	
     private int index;
     private String errorMsg = "";
-    private String successMsg = "";
+    @SuppressWarnings("unused")
+	private String successMsg = "";
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,7 +54,7 @@ public class LibraryRenewDetail extends ModuleActivity{
         }
         else {
         	renewMessageTV.setText("1 renewed successfully!");
-        	renewMessageTV.setTextColor(getResources().getColor(R.color.result_text));
+        	renewMessageTV.setTextColor(R.color.result_text);
         }
         
         renewDoneButton  = (Button)findViewById(R.id.renewDoneButton);
@@ -74,12 +69,11 @@ public class LibraryRenewDetail extends ModuleActivity{
 
         
     }
-
+/*
     private void doSearch(String barcode) {
 
         mLoadingView.setVisibility(View.VISIBLE);
         mLoadingView.showLoading();
-
         LibraryModel.renewBook(this, uiHandler,barcode);
     }
 
@@ -102,6 +96,8 @@ public class LibraryRenewDetail extends ModuleActivity{
             }
         }
     };
+ */
+    
 	@Override
 	protected Module getModule() {
 		return new LibrariesModule();

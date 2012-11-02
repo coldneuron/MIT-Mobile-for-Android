@@ -52,15 +52,18 @@ public final class RSS14Reader extends AbstractRSSReader {
       {1,3,9,1},
   };
 
-  private final Vector possibleLeftPairs;
-  private final Vector possibleRightPairs;
+  @SuppressWarnings("rawtypes")
+private final Vector possibleLeftPairs;
+  @SuppressWarnings("rawtypes")
+private final Vector possibleRightPairs;
 
-  public RSS14Reader() {
+  @SuppressWarnings("rawtypes")
+public RSS14Reader() {
     possibleLeftPairs = new Vector();
     possibleRightPairs = new Vector();
   }
 
-  public Result decodeRow(int rowNumber, BitArray row, Hashtable hints) throws NotFoundException {
+  public Result decodeRow(int rowNumber, BitArray row, @SuppressWarnings("rawtypes") Hashtable hints) throws NotFoundException {
     Pair leftPair = decodePair(row, false, rowNumber, hints);
     addOrTally(possibleLeftPairs, leftPair);
     row.reverse();
@@ -85,11 +88,13 @@ public final class RSS14Reader extends AbstractRSSReader {
     throw NotFoundException.getNotFoundInstance();
   }
 
-  private static void addOrTally(Vector possiblePairs, Pair pair) {
+  @SuppressWarnings("unchecked")
+private static void addOrTally(@SuppressWarnings("rawtypes") Vector possiblePairs, Pair pair) {
     if (pair == null) {
       return;
     }
-    Enumeration e = possiblePairs.elements();
+    @SuppressWarnings("rawtypes")
+	Enumeration e = possiblePairs.elements();
     boolean found = false;
     while (e.hasMoreElements()) {
       Pair other = (Pair) e.nextElement();
@@ -157,7 +162,7 @@ public final class RSS14Reader extends AbstractRSSReader {
     return checkValue == targetCheckValue;
   }
 
-  private Pair decodePair(BitArray row, boolean right, int rowNumber, Hashtable hints) {
+  private Pair decodePair(BitArray row, boolean right, int rowNumber, @SuppressWarnings("rawtypes") Hashtable hints) {
     try {
       int[] startEnd = findFinderPattern(row, 0, right);
       FinderPattern pattern = parseFoundFinderPattern(row, rowNumber, right, startEnd);

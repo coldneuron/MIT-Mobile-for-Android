@@ -20,8 +20,6 @@ import android.os.Handler;
 import android.util.Log;
 
 public abstract class JSONParser  {
-	
-	private static final String TAG = "JSONParser";
 
 	private static final String HTTP_USER_AGENT = UserAgent.get();
 	
@@ -31,6 +29,7 @@ public abstract class JSONParser  {
 	
 	protected static String result;
 	
+	@SuppressWarnings("rawtypes")
 	public List items;
 	
 	public static JSONObject jItem;
@@ -111,6 +110,7 @@ public abstract class JSONParser  {
         }
     }
     
+	@SuppressWarnings("rawtypes")
 	public List parse(InputStream is, boolean expectObj) throws IOException, JSONException {
 
         JSONArray jArray = null;

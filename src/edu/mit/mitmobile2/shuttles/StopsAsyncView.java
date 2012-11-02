@@ -95,7 +95,8 @@ public class StopsAsyncView  extends LinearLayout implements SliderInterface , O
 	    	 
 	    }
 
-	    @Override
+	    @SuppressWarnings("unchecked")
+		@Override
 		protected void onProgressUpdate(Void... values) {
 			
 			super.onProgressUpdate(values);
@@ -378,7 +379,7 @@ public class StopsAsyncView  extends LinearLayout implements SliderInterface , O
         topView.setMinimumHeight(height-30);
         
 		lb = new LoaderBar(ctx);
-		topView.addView(lb, 0);
+		topView.addView(lb);
 		
 		addView(topView);
 

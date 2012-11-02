@@ -48,7 +48,7 @@ public abstract class OneDReader implements Reader {
   }
 
   // Note that we don't try rotation without the try harder flag, even if rotation was supported.
-  public Result decode(BinaryBitmap image, Hashtable hints) throws NotFoundException, FormatException {
+  public Result decode(BinaryBitmap image, @SuppressWarnings("rawtypes") Hashtable hints) throws NotFoundException, FormatException {
     try {
       return doDecode(image, hints);
     } catch (NotFoundException nfe) {
@@ -57,7 +57,8 @@ public abstract class OneDReader implements Reader {
         BinaryBitmap rotatedImage = image.rotateCounterClockwise();
         Result result = doDecode(rotatedImage, hints);
         // Record that we found it rotated 90 degrees CCW / 270 degrees CW
-        Hashtable metadata = result.getResultMetadata();
+        @SuppressWarnings("rawtypes")
+		Hashtable metadata = result.getResultMetadata();
         int orientation = 270;
         if (metadata != null && metadata.containsKey(ResultMetadataType.ORIENTATION)) {
           // But if we found it reversed in doDecode(), add in that result here:
@@ -96,7 +97,8 @@ public abstract class OneDReader implements Reader {
    * @return The contents of the decoded barcode
    * @throws NotFoundException Any spontaneous errors which occur
    */
-  private Result doDecode(BinaryBitmap image, Hashtable hints) throws NotFoundException {
+  @SuppressWarnings("unchecked")
+private Result doDecode(BinaryBitmap image, @SuppressWarnings("rawtypes") Hashtable hints) throws NotFoundException {
     int width = image.getWidth();
     int height = image.getHeight();
     BitArray row = new BitArray(width);
@@ -139,8 +141,10 @@ public abstract class OneDReader implements Reader {
           // don't want to clutter with noise from every single row scan -- just the scans
           // that start on the center line.
           if (hints != null && hints.containsKey(DecodeHintType.NEED_RESULT_POINT_CALLBACK)) {
-            Hashtable newHints = new Hashtable(); // Can't use clone() in J2ME
-            Enumeration hintEnum = hints.keys();
+            @SuppressWarnings("rawtypes")
+			Hashtable newHints = new Hashtable(); // Can't use clone() in J2ME
+            @SuppressWarnings("rawtypes")
+			Enumeration hintEnum = hints.keys();
             while (hintEnum.hasMoreElements()) {
               Object key = hintEnum.nextElement();
               if (!key.equals(DecodeHintType.NEED_RESULT_POINT_CALLBACK)) {
@@ -291,7 +295,7 @@ public abstract class OneDReader implements Reader {
    * @return {@link Result} containing encoded string and start/end of barcode
    * @throws NotFoundException if an error occurs or barcode cannot be found
    */
-  public abstract Result decodeRow(int rowNumber, BitArray row, Hashtable hints)
+  public abstract Result decodeRow(int rowNumber, BitArray row, @SuppressWarnings("rawtypes") Hashtable hints)
       throws NotFoundException, ChecksumException, FormatException;
 
 }

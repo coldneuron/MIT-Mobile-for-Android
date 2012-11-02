@@ -16,12 +16,6 @@
 
 package com.google.zxing.client.android;
 
-import edu.mit.mitmobile2.MITTitleBar;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
-import edu.mit.mitmobile2.R;
-import edu.mit.mitmobile2.qrreader.QRReaderModule;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -34,7 +28,6 @@ import java.util.Vector;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.text.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -52,9 +45,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Vibrator;
+import android.text.ClipboardManager;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -71,27 +67,25 @@ import com.google.zxing.client.android.camera.CameraManager;
 import com.google.zxing.client.android.result.ResultHandler;
 import com.google.zxing.client.android.result.ResultHandlerFactory;
 
-import edu.mit.mitmobile2.Module;
-import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
-import edu.mit.mitmobile2.qrreader.QRReaderHelpActivity;
-import edu.mit.mitmobile2.qrreader.QRReaderHistoryActivity;
-import edu.mit.mitmobile2.qrreader.QRReaderModule;
 
 /**
  *  This client is a heavily paired down version of the sample zxing one
  *  written by Daniel Switkin which in turn was based on the CameraPreview
  *  example in the Android SDK.
  *
- * @author modified by MIT Mobile
+ * @author ian.gavalakis@modolabs.com 
  */
-public final class CaptureActivity extends NewModuleActivity implements SurfaceHolder.Callback {
+public final class CaptureActivity extends Activity implements SurfaceHolder.Callback {
 
   public static final int CAPTURE_QR_ACTIVITY_REQUEST_CODE = 1666;
 	  
   private static final String TAG = CaptureActivity.class.getSimpleName();
 
-  //private static final int SHARE_ID = Menu.FIRST;
+  @SuppressWarnings("unused")
+private static final int SHARE_ID = Menu.FIRST;
+
+  private static final int MENU_QR_HELP = Menu.FIRST;
   
   private static final int DIALOG_QR_HELP = 1;
 	
@@ -123,7 +117,8 @@ public final class CaptureActivity extends NewModuleActivity implements SurfaceH
 
   private CaptureActivityHandler handler;
 
-  private Context ctx;
+  @SuppressWarnings("unused")
+private Context ctx;
   
   private ViewfinderView viewfinderView;
   private TextView statusView;
@@ -150,7 +145,8 @@ public final class CaptureActivity extends NewModuleActivity implements SurfaceH
     }
   };
 
-  private final DialogInterface.OnClickListener aboutListener =
+  @SuppressWarnings("unused")
+private final DialogInterface.OnClickListener aboutListener =
       new DialogInterface.OnClickListener() {
     public void onClick(DialogInterface dialogInterface, int i) {
       Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.zxing_url)));
@@ -171,11 +167,11 @@ public final class CaptureActivity extends NewModuleActivity implements SurfaceH
   public void onCreate(Bundle icicle) {
     super.onCreate(icicle);
 
-    ctx = this;
-    
     Window window = getWindow();
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     setContentView(R.layout.capture);
+
+    ctx = this;
     
     CameraManager.init(getApplication());
     viewfinderView = (ViewfinderView) findViewById(R.id.viewfinder_view);
@@ -288,6 +284,35 @@ public final class CaptureActivity extends NewModuleActivity implements SurfaceH
     }
     return super.onKeyDown(keyCode, event);
   }
+
+  /*
+  // Don't display the share menu item if the result overlay is showing.
+  @Override
+  public boolean onPrepareOptionsMenu(Menu menu) {
+    super.onPrepareOptionsMenu(menu);
+    menu.findItem(SHARE_ID).setVisible(lastResult == null);
+    return true;
+  }
+*/
+  @Override
+  public boolean onPrepareOptionsMenu(Menu menu) {
+    super.onPrepareOptionsMenu(menu);
+	menu.clear();
+	menu.add(0, MENU_QR_HELP, Menu.NONE, "Help")
+		.setIcon(R.drawable.menu_about);
+    return true;
+  }
+  
+   @Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case MENU_QR_HELP:
+			showDialog(DIALOG_QR_HELP);
+			break;
+		}
+		return true;
+	}
+
 	
 	@Override
 	protected Dialog onCreateDialog(int id) {
@@ -301,7 +326,7 @@ public final class CaptureActivity extends NewModuleActivity implements SurfaceH
 	public static Dialog helpDialog(Activity activity) {
 		//Context context = activity.getApplicationContext();
 		Dialog dialog = new Dialog(activity);
-		dialog.setTitle("Scan QR Code or Barcode");
+		dialog.setTitle("Scan QR Code");
 		dialog.setContentView(R.layout.qr_dialog);
 		return dialog;
 		
@@ -412,7 +437,8 @@ public final class CaptureActivity extends NewModuleActivity implements SurfaceH
   }
 
   // Put up our own UI for how to handle the decoded contents.
-  private void handleDecodeInternally(Result rawResult, Bitmap barcode) {
+  @SuppressWarnings("unchecked")
+private void handleDecodeInternally(Result rawResult, Bitmap barcode) {
     statusView.setVisibility(View.GONE);
     viewfinderView.setVisibility(View.GONE);
     resultView.setVisibility(View.VISIBLE);
@@ -613,25 +639,4 @@ public final class CaptureActivity extends NewModuleActivity implements SurfaceH
   public void drawViewfinder() {
     viewfinderView.drawViewfinder();
   }
-
-	/*
-	 * Additions added specifically for the MIT Android app
-	 */
-	@Override
-	public boolean isModuleHomeActivity() {
-		return true;
-  	}
-
-   @Override
-   protected NewModule getNewModule() {
-	   return new QRReaderModule();
-   }
-
-   @Override
-   protected boolean isScrollable() {
-	   return false;
-   }
-
-   @Override
-   protected void onOptionSelected(String optionId) { }
 }

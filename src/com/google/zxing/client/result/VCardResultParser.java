@@ -67,8 +67,10 @@ final class VCardResultParser extends ResultParser {
         birthday, title, url);
   }
 
-  private static String[] matchVCardPrefixedField(String prefix, String rawText, boolean trim) {
-    Vector matches = null;
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+private static String[] matchVCardPrefixedField(String prefix, String rawText, boolean trim) {
+    @SuppressWarnings("rawtypes")
+	Vector matches = null;
     int i = 0;
     int max = rawText.length();
 

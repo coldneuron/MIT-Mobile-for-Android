@@ -2,8 +2,6 @@ package edu.mit.mitmobile2.tour;
 
 import java.util.ArrayList;
 
-import edu.mit.mitmobile2.R;
-
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -14,11 +12,13 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Gallery;
 import android.widget.ImageView;
+import edu.mit.mitmobile2.R;
 
 public class TourImageAdapter extends BaseAdapter {
 
 	private Context mContext;
 
+	@SuppressWarnings("unused")
 	private ContentResolver crThumb;
     
 	ArrayList<String> filepaths = new ArrayList<String>();
@@ -39,15 +39,18 @@ public class TourImageAdapter extends BaseAdapter {
         a.recycle();
     }
 
-    public int getCount() {
+    @Override
+	public int getCount() {
         return filepaths.size();
     }
 
-    public long getItemId(int position) {
+    @Override
+	public long getItemId(int position) {
         return 0;
     }
 
-    public View getView(int position, View convertView, ViewGroup parent) {
+    @Override
+	public View getView(int position, View convertView, ViewGroup parent) {
     	
         ImageView imageView;
         

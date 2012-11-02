@@ -51,9 +51,11 @@ final class AddressBookAUResultParser extends ResultParser {
         addresses, null, null, null, null);
   }
 
-  private static String[] matchMultipleValuePrefix(String prefix, int max, String rawText,
+  @SuppressWarnings({ "rawtypes", "unchecked" })
+private static String[] matchMultipleValuePrefix(String prefix, int max, String rawText,
       boolean trim) {
-    Vector values = null;
+    @SuppressWarnings("rawtypes")
+	Vector values = null;
     for (int i = 1; i <= max; i++) {
       String value = matchSinglePrefixedField(prefix + i + ':', rawText, '\r', trim);
       if (value == null) {

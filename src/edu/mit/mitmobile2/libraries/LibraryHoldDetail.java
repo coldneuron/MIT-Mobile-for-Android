@@ -1,17 +1,13 @@
 package edu.mit.mitmobile2.libraries;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import edu.mit.mitmobile2.FullScreenLoader;
-import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
@@ -22,7 +18,8 @@ public class LibraryHoldDetail extends ModuleActivity{
 	public static final String TAG = "LibraryHoldDetail";
 
     Context mContext;
-    private FullScreenLoader mLoadingView;
+    @SuppressWarnings("unused")
+	private FullScreenLoader mLoadingView;
     private TitleBar holdTitleBar;
     private TextView holdTitleTV;
     private TextView holdAuthorTV;
@@ -31,7 +28,6 @@ public class LibraryHoldDetail extends ModuleActivity{
 	private TextView holdISBNTV;
 	private ImageView holdStatusIconIV;
 	private TextView holdStatusTV;
-	private TextView holdPickupLocationTV;
     private int index;
 
 	@Override
@@ -80,7 +76,7 @@ public class LibraryHoldDetail extends ModuleActivity{
     	mLoadingView = (FullScreenLoader) findViewById(R.id.librarySearchLoading);
 
     }
-
+/*
     private void doSearch(String barcode) {
 
         mLoadingView.setVisibility(View.VISIBLE);
@@ -115,7 +111,7 @@ public class LibraryHoldDetail extends ModuleActivity{
             }
         }
     };
-
+*/
 	@Override
 	protected Module getModule() {
 		return new LibrariesModule();

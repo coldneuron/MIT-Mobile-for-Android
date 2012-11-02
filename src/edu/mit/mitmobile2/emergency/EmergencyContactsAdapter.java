@@ -27,7 +27,6 @@ class EmergencyContactsAdapter extends CursorAdapter {
 		mContext = context;
 		mContactStyle = new TextAppearanceSpan(mContext, R.style.ListItemPrimary);
 		mPhoneStyle = new TextAppearanceSpan(mContext, R.style.ListItemSecondary);
-		
 	}
 	
 	private void setupRow(Cursor cursor, View row) {
@@ -63,14 +62,14 @@ class EmergencyContactsAdapter extends CursorAdapter {
 	
 	@Override
 	public void bindView(View view, Context context, Cursor cursor) {
-		View row = view;
+		LinearLayout row = (LinearLayout) view;
 		setupRow(cursor, row);
 	}
 
 	@Override
 	public View newView(Context context, Cursor cursor, ViewGroup parent) {
 		LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		View row = inflater.inflate(R.layout.emergency_row, null);
+		LinearLayout row = (LinearLayout) inflater.inflate(R.layout.emergency_row, null);
 		setupRow(cursor, row);
 		return row;
 	}

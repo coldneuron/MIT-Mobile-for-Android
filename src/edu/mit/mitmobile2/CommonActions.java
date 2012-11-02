@@ -26,11 +26,9 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import edu.mit.mitmobile2.events.EventsModule;
-import edu.mit.mitmobile2.links.LinksModule;
 import edu.mit.mitmobile2.maps.MITMapActivity;
 import edu.mit.mitmobile2.maps.MapsModule;
 import edu.mit.mitmobile2.mit150.MIT150Module;
-import edu.mit.mitmobile2.qrreader.QRReaderModule;
 
 public class CommonActions {
 
@@ -131,7 +129,7 @@ public class CommonActions {
 	/*************************************************************************************/
 	static String FB = "com.facebook.katana.ShareLinkActivity";
 	
-	public static void shareCustomContent(final Context ctx, String subject, String summary, final String url) {
+	public static void shareCustomContent(final Activity ctx, String subject, String summary, final String url) {
 		
 		
 		String extraText = summary;
@@ -234,7 +232,7 @@ public class CommonActions {
 			actionUrl = SpecialActions.actionUrl(actionUrl);
 		}
 		
-		if(actionUrl.startsWith("http://") || actionUrl.startsWith("https://")) {
+		if(actionUrl.startsWith("http://")) {
 			viewURL(context, actionUrl);
 		}
 		
@@ -246,10 +244,6 @@ public class CommonActions {
 				module = new MIT150Module();
 			} else if (actionUrl.startsWith("mitmobile://calendar/")) {
 				module = new EventsModule();
-			} else if (actionUrl.startsWith("mitmobile://qrreader/")) {
-				module = new QRReaderModule();
-			} else if (actionUrl.startsWith("mitmobile://links/")) {
-				module = new LinksModule();
 			}
 			
 			if(module != null) {

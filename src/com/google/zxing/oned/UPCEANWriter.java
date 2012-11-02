@@ -37,7 +37,7 @@ public abstract class UPCEANWriter implements Writer {
   }
 
   public BitMatrix encode(String contents, BarcodeFormat format, int width, int height,
-      Hashtable hints) throws WriterException {
+      @SuppressWarnings("rawtypes") Hashtable hints) throws WriterException {
     if (contents == null || contents.length() == 0) {
       throw new IllegalArgumentException("Found empty contents");
     }

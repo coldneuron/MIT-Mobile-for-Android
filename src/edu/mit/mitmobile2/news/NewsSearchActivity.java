@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.widget.ArrayAdapter;
-import edu.mit.mitmobile2.NewModule;
+import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.SearchActivity;
 import edu.mit.mitmobile2.objs.NewsItem;
 import edu.mit.mitmobile2.objs.SearchResults;
@@ -14,7 +14,6 @@ import edu.mit.mitmobile2.objs.SearchResults;
 public class NewsSearchActivity extends SearchActivity<NewsItem> {
 
 	protected NewsModel mNewsModel;
-	private String mSearchTerm;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -35,8 +34,7 @@ public class NewsSearchActivity extends SearchActivity<NewsItem> {
 
 	@Override
 	protected void initiateSearch(String searchTerm, Handler uiHandler) {
-		mSearchTerm = searchTerm;
-		mNewsModel.executeSearch(searchTerm, uiHandler, 0);
+		mNewsModel.executeSearch(searchTerm, uiHandler);
 	}
 
 	@Override
@@ -49,9 +47,14 @@ public class NewsSearchActivity extends SearchActivity<NewsItem> {
 		return "story";
 	}
 
+	@Override
+	protected Module getModule() {
+		return new NewsModule();
+	}
+
     @Override
     protected boolean supportsMoreResult() {
-        return true;
+        return false;
     }
 
 	@Override
@@ -61,29 +64,5 @@ public class NewsSearchActivity extends SearchActivity<NewsItem> {
 		intent.putExtra(NewsDetailsActivity.SEARCH_TERM_KEY, results.getSearchTerm());
 		startActivity(intent);
 		
-	}
-
-	@Override
-	protected NewModule getNewModule() {
-		// TODO Auto-generated method stub
-		return new NewsModule();
-	}
-
-	@Override
-	protected boolean isScrollable() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	protected void onOptionSelected(String optionId) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	protected void continueSearch(SearchResults<NewsItem> previousResults,
-			Handler uiHandler) {
-		// TODO Auto-generated method stub
-		mNewsModel.executeSearch(mSearchTerm, uiHandler, previousResults.getResultsList().size());
 	}
 }

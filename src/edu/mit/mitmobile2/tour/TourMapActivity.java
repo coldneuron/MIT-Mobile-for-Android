@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import edu.mit.mitmobile2.HomeScreenActivity;
+import edu.mit.mitmobile2.MITNewsWidgetActivity;
 import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.RemoteImageView;
@@ -359,7 +359,7 @@ public class TourMapActivity extends MapBaseActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch(item.getItemId()) {
 			case MENU_HOME:
-				HomeScreenActivity.goHome(this);
+				MITNewsWidgetActivity.goHome(this);
 				return true;
 				
 			case MENU_TOUR_HOME:
@@ -470,6 +470,7 @@ public class TourMapActivity extends MapBaseActivity {
 			private static final long serialVersionUID = 1L;
 			protected static final int MAX_ENTRIES = 10;
 			
+			@Override
 			protected boolean removeEldestEntry(Map.Entry<String, View> eldest) {
 				return size() > MAX_ENTRIES;
 			}

@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -16,17 +18,18 @@ import android.widget.ListView;
 import android.widget.TextView;
 import edu.mit.mitmobile2.FullScreenLoader;
 import edu.mit.mitmobile2.Global;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.TwoLineActionRow;
 import edu.mit.mitmobile2.facilities.FacilitiesDB.LocationTable;
 import edu.mit.mitmobile2.objs.FacilitiesItem.CategoryRecord;
 import edu.mit.mitmobile2.objs.FacilitiesItem.LocationRecord;
 
-public class FacilitiesProblemLocationActivity extends NewModuleActivity {
+public class FacilitiesProblemLocationActivity extends ModuleActivity {
 
 	public static final String TAG = "FacilitiesProblemLocationActivity";
+	private static final int MENU_INFO = 0;
 	
 	Context mContext;
 	ListView mListView;
@@ -54,8 +57,6 @@ public class FacilitiesProblemLocationActivity extends NewModuleActivity {
 	public void createViews() {
 		
 		setContentView(R.layout.facilities_problem_location);
-		addSecondaryTitle("Where is it?");
-		
 		mLoader = (FullScreenLoader) findViewById(R.id.facilitiesLoader);
 		mLoader.showLoading();
 		new DatabaseUpdater().execute(""); 
@@ -123,21 +124,24 @@ public class FacilitiesProblemLocationActivity extends NewModuleActivity {
                     try {
                             final String categoryVersion = FacilitiesDB.updateCategories(mContext, mFacilitiesLoadedHandler );
                             mFacilitiesLoadedHandler.post(new Runnable() {
-                                 public void run() {
+                                 @Override
+								public void run() {
                                 	 Global.setVersion("local", "map", "category_list", categoryVersion, mContext);
                                  }
                             });
 
                             final String locationVersion = FacilitiesDB.updateLocations(mContext, mFacilitiesLoadedHandler );
                             mFacilitiesLoadedHandler.post(new Runnable() {
-                                 public void run() {
+                                 @Override
+								public void run() {
                                 	 Global.setVersion("local", "map", "location", locationVersion, mContext);
                                  }
                             });
 
                             final String problemTypeVersion = FacilitiesDB.updateProblemTypes(mContext,mFacilitiesLoadedHandler);
                             mFacilitiesLoadedHandler.post(new Runnable() {
-                                 public void run() {
+                                 @Override
+								public void run() {
                                 	 Global.setVersion("local", "facilities", "problem_type", problemTypeVersion, mContext);
                                  }
                             });
@@ -178,26 +182,29 @@ public class FacilitiesProblemLocationActivity extends NewModuleActivity {
 	}
 		
 	@Override
+	protected Module getModule() {
+		return new FacilitiesModule();
+	}
+
+	@Override
 	public boolean isModuleHomeActivity() {
 		return false;
 	}
 
 	@Override
-	protected NewModule getNewModule() {
-		// TODO Auto-generated method stub
-		return new FacilitiesModule();
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case MENU_INFO:
+			Intent intent = new Intent(mContext, FacilitiesInfoActivity.class);					
+			startActivity(intent);
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
-
+	
 	@Override
-	protected boolean isScrollable() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	protected void onOptionSelected(String optionId) {
-		// TODO Auto-generated method stub
-		
+	protected void prepareActivityOptionsMenu(Menu menu) { 
 	}
 
 	

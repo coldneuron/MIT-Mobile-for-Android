@@ -8,13 +8,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.LinkedList;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
-
-import edu.mit.mitmobile2.about.BuildSettings;
-import edu.mit.mitmobile2.tour.Tour.TourItem;
 
 import android.content.Context;
 import android.media.MediaPlayer;
@@ -25,6 +23,8 @@ import android.util.Log;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
+import edu.mit.mitmobile2.about.BuildSettings;
+import edu.mit.mitmobile2.tour.Tour.TourItem;
 
 public class AudioPlayer implements OnCompletionListener, OnErrorListener {
 	

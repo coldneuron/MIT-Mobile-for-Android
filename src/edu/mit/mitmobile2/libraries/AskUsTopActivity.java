@@ -4,16 +4,17 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.style.TextAppearanceSpan;
+import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.TextView.BufferType;
 import edu.mit.mitmobile2.CommonActions;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.TwoLineActionRow;
 
-public class AskUsTopActivity extends NewModuleActivity {
+public class AskUsTopActivity extends ModuleActivity {
 
     private TwoLineActionRow askUsRow;
     private TwoLineActionRow makeAppontmentRow;
@@ -63,7 +64,7 @@ public class AskUsTopActivity extends NewModuleActivity {
     }
     
     @Override
-    protected NewModule getNewModule() {
+    protected Module getModule() {
         return new LibrariesModule();
     }
 
@@ -72,11 +73,8 @@ public class AskUsTopActivity extends NewModuleActivity {
         return false;
     }
 
-	@Override
-	protected boolean isScrollable() {
-		return false;
-	}
+    @Override
+    protected void prepareActivityOptionsMenu(Menu menu) {
+    }
 
-	@Override
-	protected void onOptionSelected(String optionId) { }
 }

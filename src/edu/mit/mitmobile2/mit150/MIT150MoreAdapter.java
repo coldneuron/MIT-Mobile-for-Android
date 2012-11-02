@@ -2,8 +2,6 @@ package edu.mit.mitmobile2.mit150;
 
 import java.util.ArrayList;
 
-import edu.mit.mitmobile2.R;
-
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
@@ -13,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import edu.mit.mitmobile2.R;
 
 public class MIT150MoreAdapter extends ArrayAdapter<MIT150MoreItem> {
 

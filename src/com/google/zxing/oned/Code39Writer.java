@@ -32,7 +32,7 @@ public final class Code39Writer extends UPCEANWriter {
                           BarcodeFormat format,
                           int width,
                           int height,
-                          Hashtable hints) throws WriterException {
+                          @SuppressWarnings("rawtypes") Hashtable hints) throws WriterException {
     if (format != BarcodeFormat.CODE_39) {
       throw new IllegalArgumentException("Can only encode CODE_39, but got " + format);
     }

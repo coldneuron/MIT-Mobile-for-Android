@@ -6,17 +6,13 @@ import java.util.List;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 import edu.mit.mitmobile2.FullScreenLoader;
-import edu.mit.mitmobile2.MobileWebApi;
 import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
@@ -27,6 +23,7 @@ public class LibraryRenewBooks extends ModuleActivity  {
 	
 	public static final String TAG = "LibraryLoans";
 
+	@SuppressWarnings("unused")
 	private View mLoanResults;
     private ListView mListView;
     private FullScreenLoader mLoadingView;
@@ -54,7 +51,7 @@ public class LibraryRenewBooks extends ModuleActivity  {
         mLoadingView.setVisibility(View.GONE);
         //doSearch();
     }
-
+/*
     private void doSearch() {
         mLoanResults.setVisibility(View.GONE);
         mLoadingView.setVisibility(View.VISIBLE);
@@ -70,7 +67,7 @@ public class LibraryRenewBooks extends ModuleActivity  {
 
             if (msg.arg1 == MobileWebApi.SUCCESS) {
             	Log.d(TAG,"MobileWebApi success");
-                @SuppressWarnings("unchecked")
+                
                 LoanData loanData = (LoanData)msg.obj;
                 LibraryLoans.setLoanData((LoanData)msg.obj);
                 loanStatusTV.setText("You have " + loanData.getNumLoan() + " items on loan." + loanData.getNumOverdue() + " overdue.");
@@ -92,7 +89,7 @@ public class LibraryRenewBooks extends ModuleActivity  {
             }
         }
     };
-
+*/
     @Override
     protected Module getModule() {
         return new LibrariesModule();
@@ -109,7 +106,8 @@ public class LibraryRenewBooks extends ModuleActivity  {
     }
 
     private class LibraryRenewBooksAdapter extends SimpleArrayAdapter<LoanListItem> {
-        private List<LoanListItem> libraryLoanItems;
+        @SuppressWarnings("unused")
+		private List<LoanListItem> libraryLoanItems;
         public LibraryRenewBooksAdapter(List<LoanListItem> items) {
             super(LibraryRenewBooks.this, items, R.layout.library_renew_books_action_row);
             libraryLoanItems = items;
@@ -156,7 +154,7 @@ public class LibraryRenewBooks extends ModuleActivity  {
         		loanStatusTV.setTextColor(Color.RED);
         	}
         	else {
-        		loanStatusTV.setTextColor(getResources().getColor(R.color.contents_text));
+        		loanStatusTV.setTextColor(R.color.contents_text);
         	}
         }
 

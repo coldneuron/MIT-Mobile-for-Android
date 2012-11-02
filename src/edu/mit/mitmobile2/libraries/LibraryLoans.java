@@ -28,6 +28,8 @@ import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.SimpleArrayAdapter;
+import edu.mit.mitmobile2.classes.LoanData;
+import edu.mit.mitmobile2.classes.RenewBookResponse;
 import edu.mit.mitmobile2.objs.LoanListItem;
 import edu.mit.mitmobile2.objs.RenewResponseItem;
 
@@ -35,7 +37,6 @@ public class LibraryLoans extends ModuleActivity  {
 	
 	public static final String TAG = "LibraryLoans";
 
-	private View tabs;
 	private View mLoanResults;
     private ListView mListView;
     private FullScreenLoader mLoadingView;
@@ -205,7 +206,7 @@ public class LibraryLoans extends ModuleActivity  {
 
             if (msg.arg1 == MobileWebApi.SUCCESS) {
             	Log.d(TAG,"MobileWebApi success");
-                @SuppressWarnings("unchecked")
+                
                 LoanData loanData = (LoanData)msg.obj;
                 LibraryLoans.setLoanData((LoanData)msg.obj);
                 loanStatusTV.setText("You have " + loanData.getNumLoan() + " items on loan." + loanData.getNumOverdue() + " overdue.");
@@ -240,7 +241,7 @@ public class LibraryLoans extends ModuleActivity  {
 
             if (msg.arg1 == MobileWebApi.SUCCESS) {
             	Log.d(TAG,"MobileWebApi success");
-                @SuppressWarnings("unchecked")
+               
             	RenewBookResponse renewBookResponse = (RenewBookResponse)msg.obj;
                 final ArrayList<RenewResponseItem> results = renewBookResponse.getRenewResponse();
                 LibraryRenewBookAdapter adapter = new LibraryRenewBookAdapter(results);
@@ -309,7 +310,8 @@ public class LibraryLoans extends ModuleActivity  {
     }
 
     private class LibraryLoanAdapter extends SimpleArrayAdapter<LoanListItem> {
-        private List<LoanListItem> libraryLoanItems;
+        @SuppressWarnings("unused")
+		private List<LoanListItem> libraryLoanItems;
         public LibraryLoanAdapter(List<LoanListItem> items) {
             super(LibraryLoans.this, items, R.layout.library_loan_action_row);
             libraryLoanItems = items;
@@ -367,7 +369,7 @@ public class LibraryLoans extends ModuleActivity  {
         		loanStatusTV.setTextColor(Color.RED);
         	}
         	else {
-        		loanStatusTV.setTextColor(getResources().getColor(R.color.contents_text));
+        		loanStatusTV.setTextColor(R.color.contents_text);
         	}
         	
         	// Renew Book Checkbox
@@ -396,7 +398,8 @@ public class LibraryLoans extends ModuleActivity  {
 
     // Library Renew Book Adapter
     private class LibraryRenewBookAdapter extends SimpleArrayAdapter<RenewResponseItem> {
-        private List<RenewResponseItem> libraryRenewItems;
+        @SuppressWarnings("unused")
+		private List<RenewResponseItem> libraryRenewItems;
         public LibraryRenewBookAdapter(List<RenewResponseItem> items) {
             super(LibraryLoans.this, items, R.layout.library_loan_action_row);
             libraryRenewItems = items;
@@ -440,7 +443,7 @@ public class LibraryLoans extends ModuleActivity  {
         		loanStatusTV.setTextColor(Color.RED);
         	}
         	else {
-        		loanStatusTV.setTextColor(getResources().getColor(R.color.contents_text));
+        		loanStatusTV.setTextColor(R.color.contents_text);
         	}
         	
         }

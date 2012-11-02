@@ -1,30 +1,27 @@
 package edu.mit.mitmobile2.news;
 
-import java.util.List;
-
-import edu.mit.mitmobile2.ActivityPassingCache;
-import edu.mit.mitmobile2.LoadingUIHelper;
-import edu.mit.mitmobile2.LockingScrollView;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.R;
-import edu.mit.mitmobile2.SliderInterface;
-import edu.mit.mitmobile2.SliderListNewModuleActivity;
-import edu.mit.mitmobile2.StyledContentHTML;
-import edu.mit.mitmobile2.objs.NewsItem;
-import edu.mit.mitmobile2.objs.NewsItem.Image;
-
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Picture;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.ImageView;
 import android.widget.TextView;
+import edu.mit.mitmobile2.ActivityPassingCache;
+import edu.mit.mitmobile2.LoadingUIHelper;
+import edu.mit.mitmobile2.LockingScrollView;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.R;
+import edu.mit.mitmobile2.SliderActivity;
+import edu.mit.mitmobile2.SliderInterface;
+import edu.mit.mitmobile2.StyledContentHTML;
+import edu.mit.mitmobile2.objs.NewsItem;
 
-public class NewsImageActivity extends SliderListNewModuleActivity {
+public class NewsImageActivity extends SliderActivity {
 
 	static final String NEWS_ITEM_ID_KEY = "news_item_cache_id";
 	
@@ -47,10 +44,8 @@ public class NewsImageActivity extends SliderListNewModuleActivity {
 		
 		long newsItemCacheId = getIntent().getLongExtra(NEWS_ITEM_ID_KEY, -1);
 		NewsItem newsItem = sNewsItemCache.get(newsItemCacheId);
-		List<Image> allImages = newsItem.getAllImages();
-		for(int i=0; i < allImages.size(); i++) {
-			NewsItem.Image image = allImages.get(i);
-			addScreen(new NewsImageSliderInterface(image), image.imageCaption, "" + (i+1) + " of " + allImages.size());
+		for(NewsItem.Image image : newsItem.getAllImages()) {
+			addScreen(new NewsImageSliderInterface(image), image.imageCaption, "News Image");
 		}
 		setPosition(getPositionValue());
 	}
@@ -128,6 +123,11 @@ public class NewsImageActivity extends SliderListNewModuleActivity {
 			}
 		}
 	}
+	
+	@Override
+	protected Module getModule() {
+		return new NewsModule();
+	}
 
 	@Override
 	public boolean isModuleHomeActivity() {
@@ -135,13 +135,5 @@ public class NewsImageActivity extends SliderListNewModuleActivity {
 	}
 
 	@Override
-	protected NewModule getNewModule() {
-		return new NewsModule();
-	}
-
-	@Override
-	protected void onOptionSelected(String optionId) {
-		// TODO Auto-generated method stub
-		
-	}
+	protected void prepareActivityOptionsMenu(Menu menu) { }
 }

@@ -4,6 +4,7 @@ import org.json.JSONException;
 
 import edu.mit.mitmobile2.Global;
 import edu.mit.mitmobile2.JSONParser;
+import edu.mit.mitmobile2.about.BuildSettings;
 
 public class MapAgeParser extends JSONParser {
 	

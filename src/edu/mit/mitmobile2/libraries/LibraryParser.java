@@ -11,8 +11,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.util.Log;
-
 import edu.mit.mitmobile2.MITClient;
+import edu.mit.mitmobile2.classes.FineData;
+import edu.mit.mitmobile2.classes.HoldData;
+import edu.mit.mitmobile2.classes.LoanData;
+import edu.mit.mitmobile2.classes.RenewBookResponse;
 import edu.mit.mitmobile2.libraries.BookItem.Holding;
 import edu.mit.mitmobile2.libraries.LibraryActivity.LinkItem;
 import edu.mit.mitmobile2.libraries.LibraryItem.Hours;
@@ -49,6 +52,7 @@ public class LibraryParser {
     static void parseLibraryDetail(JSONObject object, LibraryItem container) {
         try {
             container.hoursToday = object.getString("hours_today");
+            container.url = object.getString("url");
             container.tel = object.getString("tel");
             container.location = object.getString("location");
             JSONObject temp = object.getJSONObject("schedule");

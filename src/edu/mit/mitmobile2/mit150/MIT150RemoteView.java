@@ -31,6 +31,7 @@ public class MIT150RemoteView extends RemoteImageView {
 	}
 	/****************************************************************************/
 	// This rounds corners of image as well as textview and darkens latters background
+	@Override
 	public void updateImage(Bitmap image) {
 	
 		LayoutParams params = new LayoutParams(width,LayoutParams.WRAP_CONTENT);

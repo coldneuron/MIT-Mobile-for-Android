@@ -34,8 +34,10 @@ import java.util.Vector;
  */
 public final class MultiFormatReader implements Reader {
 
-  private Hashtable hints;
-  private Vector readers;
+@SuppressWarnings("rawtypes")
+private Hashtable hints;
+@SuppressWarnings("rawtypes")
+private Vector readers;
 
   /**
    * This version of decode honors the intent of Reader.decode(BinaryBitmap) in that it
@@ -59,7 +61,7 @@ public final class MultiFormatReader implements Reader {
    * @return The contents of the image
    * @throws NotFoundException Any errors which occurred
    */
-  public Result decode(BinaryBitmap image, Hashtable hints) throws NotFoundException {
+  public Result decode(BinaryBitmap image, @SuppressWarnings("rawtypes") Hashtable hints) throws NotFoundException {
     setHints(hints);
     return decodeInternal(image);
   }
@@ -87,7 +89,8 @@ public final class MultiFormatReader implements Reader {
    *
    * @param hints The set of hints to use for subsequent calls to decode(image)
    */
-  public void setHints(Hashtable hints) {
+  @SuppressWarnings({ "rawtypes", "rawtypes", "unchecked" })
+public void setHints(@SuppressWarnings({ "rawtypes", "rawtypes", "rawtypes", "rawtypes" }) Hashtable hints) {
     this.hints = hints;
 
     boolean tryHarder = hints != null && hints.containsKey(DecodeHintType.TRY_HARDER);

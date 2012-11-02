@@ -32,7 +32,7 @@ public final class ITFWriter extends UPCEANWriter {
                           BarcodeFormat format,
                           int width,
                           int height,
-                          Hashtable hints) throws WriterException {
+                          @SuppressWarnings("rawtypes") Hashtable hints) throws WriterException {
     if (format != BarcodeFormat.ITF) {
       throw new IllegalArgumentException("Can only encode ITF, but got " + format);
     }

@@ -36,12 +36,12 @@ public final class UPCAReader extends UPCEANReader {
 
   private final UPCEANReader ean13Reader = new EAN13Reader();
 
-  public Result decodeRow(int rowNumber, BitArray row, int[] startGuardRange, Hashtable hints)
+  public Result decodeRow(int rowNumber, BitArray row, int[] startGuardRange, @SuppressWarnings("rawtypes") Hashtable hints)
       throws NotFoundException, FormatException, ChecksumException {
     return maybeReturnResult(ean13Reader.decodeRow(rowNumber, row, startGuardRange, hints));
   }
 
-  public Result decodeRow(int rowNumber, BitArray row, Hashtable hints)
+  public Result decodeRow(int rowNumber, BitArray row, @SuppressWarnings("rawtypes") Hashtable hints)
       throws NotFoundException, FormatException, ChecksumException {
     return maybeReturnResult(ean13Reader.decodeRow(rowNumber, row, hints));
   }
@@ -50,7 +50,7 @@ public final class UPCAReader extends UPCEANReader {
     return maybeReturnResult(ean13Reader.decode(image));
   }
 
-  public Result decode(BinaryBitmap image, Hashtable hints) throws NotFoundException, FormatException {
+  public Result decode(BinaryBitmap image, @SuppressWarnings("rawtypes") Hashtable hints) throws NotFoundException, FormatException {
     return maybeReturnResult(ean13Reader.decode(image, hints));
   }
 

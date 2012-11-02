@@ -8,8 +8,6 @@ import java.util.List;
 
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.objs.RouteItem.Stops;
-import edu.mit.mitmobile2.shuttles.ShuttlesStatusView.Position;
-import edu.mit.mitmobile2.shuttles.ShuttlesStatusView.ShuttleStatus;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -22,14 +20,12 @@ import android.widget.TextView;
 public class RouteStopsArrayAdapter extends ArrayAdapter<Stops> {
 
 	Context ctx;
-	List<Stops> mStops;
 	
 	//int nearest = 0;	
 	
 	public RouteStopsArrayAdapter(Context context, int resource, int textViewResourceId, List<Stops> stops) {
 		super(context, resource, textViewResourceId, stops);
 		this.ctx = context;
-		mStops = stops;
 	}
 
 	@Override
@@ -63,26 +59,14 @@ public class RouteStopsArrayAdapter extends ArrayAdapter<Stops> {
 
 			////////////
 			
-			ShuttlesStatusView statusView = (ShuttlesStatusView) v.findViewById(R.id.routesRowStatus);
+			ImageView routeIV = (ImageView) v.findViewById(R.id.routesRowIV);
 			//routeIV.setImageResource(R.drawable.shuttle_stop_dot);
 			
-			Position shuttlePosition = Position.BETWEEN;	
-			// first stop
-			if (position == 0) {
-				shuttlePosition = Position.START;
-			}
-			// last stop
-			if (position == (mStops.size()-1)) {
-				shuttlePosition = Position.END;
-			}
-			statusView.setPosition(shuttlePosition);
-			
-			
 			if (s.upcoming) {
-				statusView.setStatus(ShuttleStatus.ON);
+				routeIV.setImageResource(R.drawable.shuttle_stop_dot_next);
 				nextTV.setTextAppearance(ctx, R.style.BoldRed);
 			} else {
-				statusView.setStatus(ShuttleStatus.OFF);
+				routeIV.setImageResource(R.drawable.shuttle_stop_dot);
 				nextTV.setTextAppearance(ctx, R.style.ListValue);
 			}
 			

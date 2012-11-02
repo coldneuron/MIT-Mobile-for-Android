@@ -6,11 +6,12 @@ import java.util.List;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.SliderListNewModuleActivity;
+import android.view.Menu;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.SliderActivity;
 import edu.mit.mitmobile2.SmallActivityCache;
 
-public class BookDetailActivity extends SliderListNewModuleActivity {
+public class BookDetailActivity extends SliderActivity {
     
     
     private static final String KEY = "key";
@@ -60,7 +61,7 @@ public class BookDetailActivity extends SliderListNewModuleActivity {
     }
 
     @Override
-    protected NewModule getNewModule() {
+    protected Module getModule() {
         return new LibrariesModule();
     }
 
@@ -70,6 +71,8 @@ public class BookDetailActivity extends SliderListNewModuleActivity {
     }
 
     @Override
-    protected void onOptionSelected(String optionId) { }
+    protected void prepareActivityOptionsMenu(Menu menu) {
+
+    }
 
 }

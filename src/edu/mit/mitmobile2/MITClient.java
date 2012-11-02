@@ -35,8 +35,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import edu.mit.mitmobile2.touchstone.TouchstoneActivity;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -44,6 +42,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.webkit.WebView;
+import edu.mit.mitmobile2.touchstone.TouchstoneActivity;
 
 public class MITClient extends DefaultHttpClient {
 
@@ -72,7 +71,7 @@ public class MITClient extends DefaultHttpClient {
 	
 	// Hashmap for keeping track of the status of requests made by the HttpClient 
 	// because this is not an activity, there is no context for startActivityForResult or UI handlers
-	public static Map requestMap = new HashMap();
+	public static Map<String, MITClientData> requestMap = new HashMap<String, MITClientData>();
 	
 	// Cookies
 	//public static List<Cookie> cookies = new ArrayList();
@@ -289,7 +288,7 @@ public class MITClient extends DefaultHttpClient {
 			Log.d(TAG,"user_idp = " + user_idp);
 			
 			// Add your data
-			List nameValuePairs = new ArrayList(1);
+			ArrayList<BasicNameValuePair> nameValuePairs = new ArrayList<BasicNameValuePair>(1);
 			nameValuePairs.add(new BasicNameValuePair("user_idp", user_idp));
 			try {
 				post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
@@ -373,7 +372,7 @@ public class MITClient extends DefaultHttpClient {
 		post.setURI(uri);
 		
 		// Add post data
-		List nameValuePairs = new ArrayList(2);
+		ArrayList<BasicNameValuePair> nameValuePairs = new ArrayList<BasicNameValuePair>(2);
 		nameValuePairs.add(new BasicNameValuePair("j_username", user));
 		nameValuePairs.add(new BasicNameValuePair("j_password", password));
 		try {
@@ -455,7 +454,7 @@ public class MITClient extends DefaultHttpClient {
 			post.setURI(uri);
 		
 			// Add post data
-			List nameValuePairs = new ArrayList(2);
+			ArrayList<BasicNameValuePair> nameValuePairs = new ArrayList<BasicNameValuePair>(2);
 			nameValuePairs.add(new BasicNameValuePair("SAMLResponse",SAMLResponse));
 			nameValuePairs.add(new BasicNameValuePair("TARGET", TARGET));
 			nameValuePairs.add(new BasicNameValuePair("RelayState", RelayState));
@@ -587,9 +586,6 @@ public class MITClient extends DefaultHttpClient {
 		
 	}
 
-	private void cancelRequest() {
-		Log.d(TAG,"request cancelled");
-	}
 
 	public static String getUser() {
 		return user;

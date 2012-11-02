@@ -21,6 +21,7 @@ import edu.mit.mitmobile2.Module;
 import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
 import edu.mit.mitmobile2.SimpleArrayAdapter;
+import edu.mit.mitmobile2.classes.FineData;
 import edu.mit.mitmobile2.objs.FineListItem;
 
 public class LibraryFines extends ModuleActivity  {
@@ -78,7 +79,7 @@ public class LibraryFines extends ModuleActivity  {
 
             if (msg.arg1 == MobileWebApi.SUCCESS) {
             	Log.d(TAG,"MobileWebApi success");
-                @SuppressWarnings("unchecked")
+               
                 FineData fineData = (FineData)msg.obj;
                 LibraryFines.setFineData((FineData)msg.obj);
                 
@@ -121,7 +122,8 @@ public class LibraryFines extends ModuleActivity  {
     }
 
     private class LibraryFineAdapter extends SimpleArrayAdapter<FineListItem> {
-        private List<FineListItem> libraryFineItems;
+        @SuppressWarnings("unused")
+		private List<FineListItem> libraryFineItems;
         public LibraryFineAdapter(ArrayList<FineListItem> results) {
             super(LibraryFines.this, results, R.layout.library_fine_action_row);
             libraryFineItems = results;

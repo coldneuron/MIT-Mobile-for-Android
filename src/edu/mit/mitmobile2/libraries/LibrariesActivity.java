@@ -11,8 +11,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HttpContext;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.nodes.Document;
@@ -66,6 +64,7 @@ public class LibrariesActivity extends ModuleActivity implements OnSharedPrefere
 
 	URI uri = null;
 	String uriString = "";
+	//public static String targetUrl = "https://stellar.mit.edu/atstellar";
 	public static String targetUrl = "https://mobile-dev.mit.edu/api/index.php";
 	URI targetUri;
 	public static SharedPreferences prefs;
@@ -85,9 +84,6 @@ public class LibrariesActivity extends ModuleActivity implements OnSharedPrefere
         
         mitClient = new MITClient(mContext);
 
-        // Create local HTTP context
-        HttpContext localContext = new BasicHttpContext();
-        
         // get user name and password from preferences file
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		prefs.registerOnSharedPreferenceChangeListener(this);
@@ -143,12 +139,7 @@ public class LibrariesActivity extends ModuleActivity implements OnSharedPrefere
         	//	        	//DEBUG
         }
 	}
-		
-	private void createViews() throws ClientProtocolException, IOException {
-		Log.d(TAG,"createViews()");
-		
-	}
-	
+			
 	@Override
 	protected Module getModule() {
 		return null;
@@ -177,7 +168,7 @@ public class LibrariesActivity extends ModuleActivity implements OnSharedPrefere
 	@Override
 	protected void prepareActivityOptionsMenu(Menu menu) { 
 		menu.add(0, MENU_INFO, Menu.NONE, "Info")
-		  .setIcon(R.drawable.menu_info);
+		  .setIcon(R.drawable.menu_about);
 		
 		menu.add(1, MENU_PREFS, Menu.NONE, "Prefs")
 		  .setIcon(R.drawable.main_repeat);
@@ -206,9 +197,9 @@ public class LibrariesActivity extends ModuleActivity implements OnSharedPrefere
 		}
 	}
 	
+	@Override
 	public synchronized void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-		Context mContext = this;
-		Handler uiHandler = new Handler();
+
 		if (key.equalsIgnoreCase("PREF_TOUCHSTONE_USERNAME")) {
 			mitClient.setUser(prefs.getString("PREF_TOUCHSTONE_USERNAME", null));
 		}

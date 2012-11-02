@@ -26,7 +26,7 @@ public abstract class ModuleActivity extends Activity {
 		
 		switch (item.getItemId()) {
 			case MENU_HOME: 
-				HomeScreenActivity.goHome(this);
+				MITNewsWidgetActivity.goHome(this);
 				return true;
 		
 			case MENU_MODULE_HOME:

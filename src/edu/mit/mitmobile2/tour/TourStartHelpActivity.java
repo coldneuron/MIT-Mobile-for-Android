@@ -58,7 +58,8 @@ public class TourStartHelpActivity extends ModuleActivity {
 		});
 		
 		mainContent.setWebChromeClient(new WebChromeClient() {
-			  public void onConsoleMessage(String message, int lineNumber, String sourceID) {
+			  @Override
+			public void onConsoleMessage(String message, int lineNumber, String sourceID) {
 			    Log.d("TourSuggestedLocations", message + " -- From line "
 			                         + lineNumber + " of "
 			                         + sourceID);

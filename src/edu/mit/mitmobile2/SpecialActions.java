@@ -2,7 +2,6 @@ package edu.mit.mitmobile2;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.HashMap;
 
 public class SpecialActions {
 	
@@ -44,8 +43,7 @@ public class SpecialActions {
 	}
 	
 	private static OpenHouseCategory getOpenHouseCategory(String url) {
-		HashMap<String, Integer> categoryIDs = new HashMap<String, Integer>();
-		
+
 		OpenHouseCategory[] categories = new OpenHouseCategory[] {
 			new OpenHouseCategory("eng","Engineering, Technology, and Invention", 39),
 			new OpenHouseCategory("energy", "Energy, Environment, and Sustainability", 40),

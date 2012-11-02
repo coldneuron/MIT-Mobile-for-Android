@@ -43,7 +43,8 @@ public class FinderPatternFinder {
   private static final int INTEGER_MATH_SHIFT = 8;
 
   private final BitMatrix image;
-  private final Vector possibleCenters;
+  @SuppressWarnings("rawtypes")
+private final Vector possibleCenters;
   private boolean hasSkipped;
   private final int[] crossCheckStateCount;
   private final ResultPointCallback resultPointCallback;
@@ -57,7 +58,8 @@ public class FinderPatternFinder {
     this(image, null);
   }
 
-  public FinderPatternFinder(BitMatrix image, ResultPointCallback resultPointCallback) {
+  @SuppressWarnings("rawtypes")
+public FinderPatternFinder(BitMatrix image, ResultPointCallback resultPointCallback) {
     this.image = image;
     this.possibleCenters = new Vector();
     this.crossCheckStateCount = new int[5];
@@ -68,11 +70,12 @@ public class FinderPatternFinder {
     return image;
   }
 
-  protected Vector getPossibleCenters() {
+  @SuppressWarnings("rawtypes")
+protected Vector getPossibleCenters() {
     return possibleCenters;
   }
 
-  FinderPatternInfo find(Hashtable hints) throws NotFoundException {
+  FinderPatternInfo find(@SuppressWarnings("rawtypes") Hashtable hints) throws NotFoundException {
     boolean tryHarder = hints != null && hints.containsKey(DecodeHintType.TRY_HARDER);
     int maxI = image.getHeight();
     int maxJ = image.getWidth();
@@ -388,7 +391,8 @@ public class FinderPatternFinder {
    * @param j end of possible finder pattern in row
    * @return true if a finder pattern candidate was found this time
    */
-  protected boolean handlePossibleCenter(int[] stateCount, int i, int j) {
+  @SuppressWarnings("unchecked")
+protected boolean handlePossibleCenter(int[] stateCount, int i, int j) {
     int stateCountTotal = stateCount[0] + stateCount[1] + stateCount[2] + stateCount[3] +
         stateCount[4];
     float centerJ = centerFromEnd(stateCount, j);

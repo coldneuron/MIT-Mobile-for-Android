@@ -6,15 +6,16 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
+import android.view.Display;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.FrameLayout.LayoutParams;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -28,7 +29,6 @@ abstract public class SliderActivity extends ModuleActivity {
 
 	private ArrayList<String> jumpTitles = new ArrayList<String>();
 	private ArrayList<String> headerTitles = new ArrayList<String>();
-	private SliderListAdapter mSliderListAdapter = new SliderListAdapter();
 	
 	protected GestureDetector mFlingDetector;
 
@@ -49,7 +49,7 @@ abstract public class SliderActivity extends ModuleActivity {
 	static final int SCROLL_DURATION_PER_SCREEN = 250;
 	static final int SCROLL_MAX_DURATION = 2500;
 	
-	private SliderListAdapter.OnPositionChangedListener mSliderActivityPositionChangedListener = null;
+	private SliderView.OnPositionChangedListener mSliderActivityPositionChangedListener = null;
 	
 	public void setJumpTitle(String jumpTitle, int jumpMenuIconId) {
 		mJumpTitle = jumpTitle;
@@ -72,13 +72,13 @@ abstract public class SliderActivity extends ModuleActivity {
 					
 					builder.setItems(titlesArray, new DialogInterface.OnClickListener() {
 						public void onClick(DialogInterface dialog, int item) {
-						    	mSliderListAdapter.seekTo(item);
+							mSliderView.snapToPosition(item);
 						}
 					});
 					
 					AlertDialog alert = builder.create();
 					alert.show();
-					alert.getListView().setSelection(mSliderListAdapter.getPosition());
+					alert.getListView().setSelection(mSliderView.getPosition());
 					
 				} else {
 					builder.setTitle("Too Fast!");
@@ -93,7 +93,7 @@ abstract public class SliderActivity extends ModuleActivity {
 	}
 	
 	protected void prepareJumpOptionsMenu(Menu menu) {
-		if(mJumpTitle != null && mSliderListAdapter.getScreenCount() > 1) {
+		if(mJumpTitle != null && mSliderView.getScreenCount() > 1) {
 			menu.add(MENU_MAIN_GROUP, MENU_JUMP, Menu.NONE, mJumpTitle)
 				.setIcon(mJumpMenuIconId);
 		}
@@ -114,8 +114,11 @@ abstract public class SliderActivity extends ModuleActivity {
 		ctx = this;
 		
 		mWasRotated = (Boolean) getLastNonConfigurationInstance();
+        
+        Display display = getWindowManager().getDefaultDisplay(); 
+        mSliderView.setWidth(display.getWidth());
 
-		mSliderListAdapter.setOnPositionChangedListener(new SliderListAdapter.OnPositionChangedListener() {
+        mSliderView.setOnPositionChangedListener(new SliderView.OnPositionChangedListener() {
 			@Override
 			public void onPositionChanged(int newPosition, int oldPosition) {
 				mSliderTitleBar.setLeftArrowEnabled(!mSliderView.isAtBeginning());
@@ -177,7 +180,7 @@ abstract public class SliderActivity extends ModuleActivity {
     protected void onSaveInstanceState(Bundle outState) {
     	super.onSaveInstanceState(outState);
     	
-    	outState.putInt(KEY_POSITION_SAVED, mSliderListAdapter.getPosition());
+    	outState.putInt(KEY_POSITION_SAVED, mSliderView.getPosition());
     	
     }
     
@@ -192,27 +195,39 @@ abstract public class SliderActivity extends ModuleActivity {
 	    return rotated;
 	}
 	
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+        Display display = getWindowManager().getDefaultDisplay(); 
+        mSliderView.onWidthChanged(display.getWidth());		
+	}
+	
 	protected void addScreen(SliderInterface sliderInterface, String jumpTitle, String headerTitle) {
+		Log.d(TAG,"jumpTitle = " + jumpTitle);
+		Log.d(TAG,"headerTitle = " + headerTitle);
 		jumpTitles.add(jumpTitle);
 		headerTitles.add(headerTitle);
-		mSliderListAdapter.addScreen(sliderInterface);
+		mSliderView.addScreen(sliderInterface);
 		
-		if(mSliderListAdapter.getScreenCount() > 1) {
+		if(mSliderView.getScreenCount() > 1) {
 			mSliderTitleBar.showArrows();
 		}
 	}
 	
-	public void freezeScroll() { }
+	public void freezeScroll() {
+		mSliderView.freezeScroll();
+	}
 	
-	public void unfreezeScroll() { }
+	public void unfreezeScroll() {
+		mSliderView.unfreezeScroll();		
+	}
 
 	protected void setPosition(int position) {
-	    mSliderListAdapter.setPosition(position);
-	    mSliderView.refreshScreens();
+		mSliderView.setPosition(position);
 	}
 	
 	protected int getPosition() {
-		return mSliderListAdapter.getPosition();
+		return mSliderView.getPosition();
 	}
 	
 	protected int getPositionValue() {
@@ -230,7 +245,7 @@ abstract public class SliderActivity extends ModuleActivity {
 	}
 	
 	protected View getScreen(int position) {
-		return mSliderListAdapter.getScreen(position);
+		return mSliderView.getScreen(position);
 	}
 	
 	@Override
@@ -249,6 +264,8 @@ abstract public class SliderActivity extends ModuleActivity {
 	protected void onResume() {
 		super.onResume();
 		
+		mSliderView.start();
+		
 		// not sure why, but sometimes when activities
 		// are resumed it scrolls to the previous FrameLayout
 		// this is a fix for that
@@ -265,7 +282,13 @@ abstract public class SliderActivity extends ModuleActivity {
 		
 	}
 	
-	protected void setOnPositionChangedListener(SliderListAdapter.OnPositionChangedListener positionChangedListener) {
+	@Override
+	protected void onStop() {
+		super.onStop();
+		mSliderView.stop();
+	}
+	
+	protected void setOnPositionChangedListener(SliderView.OnPositionChangedListener positionChangedListener) {
 		mSliderActivityPositionChangedListener = positionChangedListener;
 	}
 	
@@ -289,59 +312,4 @@ abstract public class SliderActivity extends ModuleActivity {
 		loader.setVisibility(View.GONE);
 		mSliderView.setVisibility(View.VISIBLE);
 	}
-	
-// 	******************************************************
-// 	show/hideFullScreen, OnBackPressedListener, onPausedListener are all implemented for full screen video
-//	implemented at higher level in future releases
-	public void showFullScreen(View view) {
-		FrameLayout fullScreenFrameLayout = (FrameLayout) findViewById(R.id.sliderActivityFullScreen);
-		fullScreenFrameLayout.removeAllViews();
-		fullScreenFrameLayout.addView(view, new FrameLayout.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-		fullScreenFrameLayout.setVisibility(View.VISIBLE);
-	}
-	
-	public void hideFullScreen() {
-		FrameLayout fullScreenFrameLayout = (FrameLayout) findViewById(R.id.sliderActivityFullScreen);
-		fullScreenFrameLayout.removeAllViews();
-		fullScreenFrameLayout.setVisibility(View.GONE);
-	}
-	
-	public interface OnBackPressedListener {
-		public boolean onBackPressed();
-	}
-
-	OnBackPressedListener mBackPressedListener;
-
-	public void setOnBackPressedListener(OnBackPressedListener backPressedListener) {
-		mBackPressedListener = backPressedListener;
-	}
-
-	@Override
-	public void onBackPressed() {
-		if (mBackPressedListener != null) {
-			if (mBackPressedListener.onBackPressed()) {
-				return;
-			}
-		}
-		super.onBackPressed();
-	}
-
-	public interface OnPausedListener {
-		public void onPaused();
-	}
-
-	OnPausedListener mPausedListener;
-
-	public void setOnPausedListener(OnPausedListener pausedListener) {
-		mPausedListener = pausedListener;
-	}
-
-	@Override
-	protected void onPause() {
-		if (mPausedListener != null) {
-			mPausedListener.onPaused();
-		}
-		super.onPause();
-	}
-// 	******************************************************
 }

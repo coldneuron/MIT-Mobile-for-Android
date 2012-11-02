@@ -1,22 +1,24 @@
 package edu.mit.mitmobile2.emergency;
 
+import edu.mit.mitmobile2.FullScreenLoader;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.ModuleActivity;
+import edu.mit.mitmobile2.R;
+import edu.mit.mitmobile2.objs.EmergencyItem.Contact;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.telephony.PhoneNumberUtils;
+import android.view.Menu;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
-import edu.mit.mitmobile2.FullScreenLoader;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
-import edu.mit.mitmobile2.R;
-import edu.mit.mitmobile2.objs.EmergencyItem.Contact;
+import android.widget.AdapterView.OnItemClickListener;
 
-public class EmergencyContactsActivity extends NewModuleActivity {
+public class EmergencyContactsActivity extends ModuleActivity {
 	
 	FullScreenLoader mLoadingView;
 	
@@ -24,9 +26,9 @@ public class EmergencyContactsActivity extends NewModuleActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.emergency_contact);
+		setContentView(R.layout.emergency);
 		setTitle("Emergeny Contacts");
-		mLoadingView = (FullScreenLoader) findViewById(R.id.emergencyContactListLoader);
+		mLoadingView = (FullScreenLoader) findViewById(R.id.emergencyListLoader);
 		
 		Handler uiHandler = new Handler() {
 			@Override
@@ -42,7 +44,7 @@ public class EmergencyContactsActivity extends NewModuleActivity {
 	private void updateView() {	
 		mLoadingView.setVisibility(View.GONE);
 		
-		ListView listView = (ListView) findViewById(R.id.emergencyContactListView);
+		ListView listView = (ListView) findViewById(R.id.emergencyListView);
 		listView.setVisibility(View.VISIBLE);
 		final EmergencyDB db = EmergencyDB.getInstance(this);
 		EmergencyContactsAdapter adapter = new EmergencyContactsAdapter(this, db.getContactsCursor());
@@ -62,24 +64,15 @@ public class EmergencyContactsActivity extends NewModuleActivity {
 	}
 
 	@Override
+	protected Module getModule() {
+		return new EmergencyModule();
+	}
+
+	@Override
 	public boolean isModuleHomeActivity() {
 		return false;
 	}
 
 	@Override
-	protected NewModule getNewModule() {
-		// TODO Auto-generated method stub
-		return new EmergencyModule();
-	}
-
-	@Override
-	protected boolean isScrollable() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	protected void onOptionSelected(String optionId) {
-		// TODO Auto-generated method stub
-	}
+	protected void prepareActivityOptionsMenu(Menu menu) { }
 }

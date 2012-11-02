@@ -1,5 +1,11 @@
 package edu.mit.mitmobile2;
 
+import edu.mit.mitmobile2.MobileWebApi;
+
+import edu.mit.mitmobile2.R;
+import edu.mit.mitmobile2.objs.SearchResults;
+
+
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
@@ -15,9 +22,8 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
-import edu.mit.mitmobile2.objs.SearchResults;
 
-public abstract class SearchActivity<ResultItem> extends NewModuleActivity {
+public abstract class SearchActivity<ResultItem> extends ModuleActivity {
 	
 	public static final String EXTRA_AUTHORITY = "authority";
 	
@@ -40,7 +46,6 @@ public abstract class SearchActivity<ResultItem> extends NewModuleActivity {
 	private Long mLastFailedSearchTime = null;
 	private final static long MINIMUM_TRY_AGAIN_WAIT = 5000; // 5 seconds
 	protected boolean mResultsDisplayed = false;
-	private boolean mResetSearchScheduled = false;
 	private String mSearchTerm;
 	private SearchResults<ResultItem> mSearchResults;
 	
@@ -115,7 +120,6 @@ public abstract class SearchActivity<ResultItem> extends NewModuleActivity {
 
 			mResultsDisplayed = false;
 			mSearching = true;
-			mResetSearchScheduled = false;
 			mSearchTerm = searchTerm;
 			initiateSearch(searchTerm, searchHandler(searchTerm));
 		}
@@ -133,10 +137,7 @@ public abstract class SearchActivity<ResultItem> extends NewModuleActivity {
 				if(currentSearchResults == mSearchResults) {
 					mLoadMore.setEnabled(true);
 					if (msg.arg1 == MobileWebApi.SUCCESS) {
-						final SearchResults<ResultItem> tempSearchResults = (SearchResults<ResultItem>) msg.obj;
-						mSearchResults = tempSearchResults;
 						mLoadMore.setTitle(LOAD_MORE);
-						
 						showSummaryView();
 						if(!mSearchResults.isPartialResult()) {
 							mSearchListView.removeFooterView(mLoadMore);
@@ -251,23 +252,14 @@ public abstract class SearchActivity<ResultItem> extends NewModuleActivity {
 	}
 	
 	private void resetBackToSearch() {
-		if (hasWindowFocus()) {
-			mResetSearchScheduled = false;
-			mResultsDisplayed = false;
-			startSearch(mSearchTerm, false, null, false);
-		} else {
-			mResetSearchScheduled = true;
-		}
+		mResultsDisplayed = false;
+		startSearch(mSearchTerm, false, null, false);
 	}
 	
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
-		if (hasFocus) {
-			if (mResetSearchScheduled) {
-				resetBackToSearch();
-			} else if(!mSearching && !mResultsDisplayed) {
-				finish();
-			}
+		if(!mSearching && !mResultsDisplayed && hasFocus) {
+			finish();
 		}
 		super.onWindowFocusChanged(hasFocus);
 	}
@@ -286,6 +278,9 @@ public abstract class SearchActivity<ResultItem> extends NewModuleActivity {
 	protected ListView getListView() {
 		return mSearchListView;
 	}
+	
+	@Override
+	protected void prepareActivityOptionsMenu(Menu menu) { }
 	
 	abstract protected String searchItemPlural();
 	

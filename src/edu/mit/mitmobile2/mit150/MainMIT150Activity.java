@@ -19,7 +19,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
@@ -82,7 +81,6 @@ public class MainMIT150Activity extends ModuleActivity {
 		ImageView btn;
 		TextView tv;
 		RelativeLayout rl;
-		FrameLayout fl;
 		
 		Bitmap bm;
 		BitmapDrawable bd;

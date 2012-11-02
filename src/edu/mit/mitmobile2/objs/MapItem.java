@@ -33,6 +33,7 @@ public class MapItem implements Parcelable {
 	
 	public String query = "";
 	
+	@Override
 	public String toString() {
 		return name;
 	}

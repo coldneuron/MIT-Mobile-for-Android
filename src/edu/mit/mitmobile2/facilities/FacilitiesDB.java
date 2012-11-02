@@ -52,7 +52,6 @@ public class FacilitiesDB {
 
 	private static final String ROOMS_TABLE = "rooms";
 	private static final String PROBLEM_TYPE_TABLE = "problem_types";
-	private static final String SHORT_LIST_LIMIT = "3";
 	
 	// BEGIN TABLE DEFINITIONS
 
@@ -245,11 +244,7 @@ public class FacilitiesDB {
 					  LocationContentAltnameTable.LOCATION_ID + "," 
 					  + LocationContentAltnameTable.NAME + "," 
 					  + LocationContentAltnameTable.ALTNAME,values);
-//			Log.d(TAG,"added location_content_altname: ");
-//			Log.d(TAG,"location_id = " + locationContentAltnameRecord.location_id);
-//			Log.d(TAG,"name = " + locationContentAltnameRecord.name);
-//			Log.d(TAG,"altname = " + locationContentAltnameRecord.altname);
-//			Log.d(TAG,"");
+
 		}
 		catch (Exception e) {
 			Log.d(TAG,"error inserting location content altname: " + e.getMessage());
@@ -282,7 +277,7 @@ public class FacilitiesDB {
 	}
 
 	public CategoryRecord getCategory(int position) {
-		SQLiteDatabase db = mDBHelper.getReadableDatabase();
+//		SQLiteDatabase db = mDBHelper.getReadableDatabase();
 		CategoryRecord category = null;
 		Cursor cursor = getCategoryCursor();
 		cursor.move(position + 1);
@@ -322,7 +317,7 @@ public class FacilitiesDB {
 	}
 
 	public LocationCategoryRecord getLocationCategory(int position) {
-		SQLiteDatabase db = mDBHelper.getReadableDatabase();
+
 		LocationCategoryRecord locationCategory = null;
 		Cursor cursor = getLocationCategoryCursor();
 		cursor.move(position + 1);
@@ -383,7 +378,7 @@ public class FacilitiesDB {
 	}
 	
 	public LocationRecord getLocation(int position) {
-		SQLiteDatabase db = mDBHelper.getReadableDatabase();
+
 		LocationRecord location = null;
 		Cursor cursor = getLocationCursor();
 		cursor.move(position + 1);
@@ -577,7 +572,7 @@ public class FacilitiesDB {
 	}
 
 	public RoomRecord getRoom(int position) {
-		SQLiteDatabase db = mDBHelper.getReadableDatabase();
+
 		RoomRecord room = null;
 		Cursor cursor = getRoomCursor();
 		cursor.move(position + 1);
@@ -903,10 +898,7 @@ public class FacilitiesDB {
 		// for testing purposes, it currently uses data from the strings xml
 		
 		Log.d(TAG,"getting facilities db info from " + Global.getMobileWebDomain());		
-		//Log.d(TAG,"num suggestions " + locationSuggestionValues.length);
-
-		final FacilitiesDB db = FacilitiesDB.getInstance(mContext);
-		
+	
 		try {
 			updateCategories(mContext,uiHandler);
 			updateLocations(mContext,uiHandler);
@@ -920,7 +912,7 @@ public class FacilitiesDB {
 
 	public static String updateCategories(Context mContext,final Handler uiHandler) {
 		final FacilitiesDB db = FacilitiesDB.getInstance(mContext);
-		Message msg = new Message();
+
 		
 		final String version = Global.getVersion("remote", "map","category_list") + "";
 		// compare local category version to remote version
@@ -938,7 +930,7 @@ public class FacilitiesDB {
 					public void onResponse(JSONObject obj) {
 						db.startTransaction();
 						Log.d(TAG,"category list begin transaction");
-						Iterator c = obj.keys();
+						Iterator<?> c = obj.keys();
 						while (c.hasNext()) {	
 							try {
 								String category_id = (String)c.next();
@@ -1127,7 +1119,7 @@ public class FacilitiesDB {
 	}
 
 	public static void updateRooms(Context mContext,final Handler uiHandler, final String buildingNumber) {
-		Message msg = new Message();
+
 		final FacilitiesDB db = FacilitiesDB.getInstance(mContext);
 	
 		MobileWebApi api = new MobileWebApi(false, true, "Facilities", mContext, uiHandler);
@@ -1143,7 +1135,7 @@ public class FacilitiesDB {
 					db.startTransaction();
 					// iterate through all building on json object
 					Log.d(TAG,"got room response from server");
-					Iterator b = obj.keys();
+					Iterator<?> b = obj.keys();
 					Log.d(TAG,"response for room = " + obj.toString());
 					while (b.hasNext()) {						
 						try {
@@ -1151,7 +1143,7 @@ public class FacilitiesDB {
 							Log.d(TAG,"adding rooms for building " + building);
 							// iterate through each floor of the building
 							JSONObject floors = (JSONObject)obj.get(building);
-							Iterator f = floors.keys();
+							Iterator<?> f = floors.keys();
 							while (f.hasNext()) {
 								String floor = (String)f.next();
 								// get the array of rooms for each floor

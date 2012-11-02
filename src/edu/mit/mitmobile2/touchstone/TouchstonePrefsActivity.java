@@ -14,12 +14,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -28,14 +27,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import edu.mit.mitmobile2.FullScreenLoader;
 import edu.mit.mitmobile2.MITClient;
-import edu.mit.mitmobile2.MobileWebApi;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.ModuleActivity;
 import edu.mit.mitmobile2.R;
-import edu.mit.mitmobile2.libraries.LibraryModel.UserIdentity;
-import edu.mit.mitmobile2.settings.SettingsModule;
 
-public class TouchstonePrefsActivity extends NewModuleActivity implements OnSharedPreferenceChangeListener {
+//public class FacilitiesActivity extends ModuleActivity implements OnClickListener {
+public class TouchstonePrefsActivity extends ModuleActivity implements OnSharedPreferenceChangeListener {
 	
 	private Context mContext;	
 
@@ -53,7 +50,8 @@ public class TouchstonePrefsActivity extends NewModuleActivity implements OnShar
 	Button touchstoneLogoutButton;
 	TextView mError;
 	private boolean credentialsChanged;
-    private LinearLayout touchstoneContents;
+    @SuppressWarnings("unused")
+	private LinearLayout touchstoneContents;
 	private FullScreenLoader touchstoneLoadingView;
 
     
@@ -68,10 +66,8 @@ public class TouchstonePrefsActivity extends NewModuleActivity implements OnShar
 		Log.d(TAG,"onCreate()");
 		super.onCreate(savedInstanceState);
 		mContext = this;
-
+		
         createViews();
-        
-        addSecondaryTitle("MIT Touchstone");
 	}
 		
 	private void createViews() {
@@ -104,20 +100,26 @@ public class TouchstonePrefsActivity extends NewModuleActivity implements OnShar
 	    touchstoneContents = (LinearLayout)findViewById(R.id.touchstoneContents);
 
 	    touchstoneUsername.addTextChangedListener(new TextWatcher(){
-	        public void afterTextChanged(Editable s) {
+	        @Override
+			public void afterTextChanged(Editable s) {
 	        	 credentialsChanged = true;
 	        	 Log.d(TAG,"credentials changed");
 	        }
-	        public void beforeTextChanged(CharSequence s, int start, int count, int after){}
-	        public void onTextChanged(CharSequence s, int start, int before, int count){}
+	        @Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after){}
+	        @Override
+			public void onTextChanged(CharSequence s, int start, int before, int count){}
 	    });
 	    
 	    touchstonePassword.addTextChangedListener(new TextWatcher(){
-	        public void afterTextChanged(Editable s) {
+	        @Override
+			public void afterTextChanged(Editable s) {
 	        	 credentialsChanged = true;
 	        }
-	        public void beforeTextChanged(CharSequence s, int start, int count, int after){}
-	        public void onTextChanged(CharSequence s, int start, int before, int count){}
+	        @Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after){}
+	        @Override
+			public void onTextChanged(CharSequence s, int start, int before, int count){}
 	    });
 
 	    
@@ -167,40 +169,46 @@ public class TouchstonePrefsActivity extends NewModuleActivity implements OnShar
 
 	}
 	
-	
-    private Handler loginUiHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-        	Log.d(TAG,"handleMessage");
-			touchstoneContents.setVisibility(View.VISIBLE);
-        	touchstoneLoadingView.setVisibility(View.GONE);
 
-            if (msg.arg1 == MobileWebApi.SUCCESS) {
-            	Log.d(TAG,"MobileWebApi success");
-                @SuppressWarnings("unchecked")
-            	UserIdentity identity = (UserIdentity)msg.obj;
-                Log.d(TAG,"identity = " + identity.getUsername());
-            } 
-            else if (msg.arg1 == MobileWebApi.ERROR) {
-            	Log.d(TAG,"show login error");
-            	mError.setText("Error logging into Touchstone");
-            	touchstoneLoadingView.showError();
-            } 
-            else if (msg.arg1 == MobileWebApi.CANCELLED) {
-            	touchstoneLoadingView.showError();
-            }
-        }
-    };
- 
 	@Override
-	protected NewModule getNewModule() {
-		return new SettingsModule();
+	protected Module getModule() {
+		return null;
 	}
 
 	@Override
 	public boolean isModuleHomeActivity() {
 		return true;
 	}
+
+	/*
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case MENU_INFO:
+			//Intent intent = new Intent(mContext, FacilitiesInfoActivity.class);					
+			//startActivity(intent);
+			return true;
+		case MENU_PREFS:
+			//Intent intent = new Intent(mContext, FacilitiesInfoActivity.class);					
+        	startActivity( new Intent(this, TouchstonePrefsActivity.class) );
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
+		
+	}
+	*/
+	
+	@Override
+	protected void prepareActivityOptionsMenu(Menu menu) { 
+		/*
+		menu.add(0, MENU_INFO, Menu.NONE, "Info")
+		  .setIcon(R.drawable.menu_about);
+		
+		menu.add(1, MENU_PREFS, Menu.NONE, "Prefs")
+		  .setIcon(R.drawable.main_repeat);
+		*/
+	}
+
 
 	
 	public static String responseContentToString(HttpResponse response) {
@@ -223,6 +231,7 @@ public class TouchstonePrefsActivity extends NewModuleActivity implements OnShar
 		}
 	}
 	
+	@Override
 	public synchronized void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
 //		Context mContext = this;
 //		Handler uiHandler = new Handler();
@@ -236,13 +245,5 @@ public class TouchstonePrefsActivity extends NewModuleActivity implements OnShar
 //		
 //		Toast.makeText(this, "user set to " + mitClient.getUser(), Toast.LENGTH_SHORT).show();
 	}
-
-	@Override
-	protected boolean isScrollable() {
-		return true;
-	}
-
-	@Override
-	protected void onOptionSelected(String optionId) {	}
 
 }

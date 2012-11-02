@@ -10,20 +10,14 @@ import java.util.Date;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
-import edu.mit.mitmobile2.CommonActions;
-import edu.mit.mitmobile2.NewModule;
-import edu.mit.mitmobile2.NewModuleActivity;
-import edu.mit.mitmobile2.PrefsActivity;
-import edu.mit.mitmobile2.R;
-
 import android.content.Context;
 import android.content.Intent;
 import android.gesture.Gesture;
 import android.gesture.GestureLibraries;
 import android.gesture.GestureLibrary;
 import android.gesture.GestureOverlayView;
-import android.gesture.Prediction;
 import android.gesture.GestureOverlayView.OnGesturePerformedListener;
+import android.gesture.Prediction;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.view.Menu;
@@ -31,8 +25,13 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.TextView;
+import edu.mit.mitmobile2.CommonActions;
+import edu.mit.mitmobile2.Module;
+import edu.mit.mitmobile2.ModuleActivity;
+import edu.mit.mitmobile2.PrefsActivity;
+import edu.mit.mitmobile2.R;
 
-public class AboutActivity extends NewModuleActivity implements OnGesturePerformedListener {
+public class AboutActivity extends ModuleActivity implements OnGesturePerformedListener {
 
 	//private static int sSquareSize; // must be an even number
 	private static final int sSquareSize = 10;
@@ -162,7 +161,7 @@ public class AboutActivity extends NewModuleActivity implements OnGesturePerform
 	
 	@Override
 	public void onGesturePerformed(GestureOverlayView overlay, Gesture gesture) {
-		ArrayList  predictions = mLibrary.recognize(gesture);
+		ArrayList<Prediction>  predictions = mLibrary.recognize(gesture);
 
 	    // We want at least one prediction
 	    if (predictions.size() > 0) {
@@ -288,7 +287,7 @@ public class AboutActivity extends NewModuleActivity implements OnGesturePerform
 	}
 
 	@Override
-	protected NewModule getNewModule() {
+	protected Module getModule() {
 		return new AboutModule();
 	}
 
@@ -298,10 +297,5 @@ public class AboutActivity extends NewModuleActivity implements OnGesturePerform
 	}
 
 	@Override
-	protected boolean isScrollable() {
-		return false;
-	}
-
-	@Override
-	protected void onOptionSelected(String optionId) { }
+	protected void prepareActivityOptionsMenu(Menu menu) { }	
 }

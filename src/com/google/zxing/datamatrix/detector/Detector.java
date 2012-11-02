@@ -57,7 +57,8 @@ public final class Detector {
    * @return {@link DetectorResult} encapsulating results of detecting a Data Matrix Code
    * @throws NotFoundException if no Data Matrix Code can be found
    */
-  public DetectorResult detect() throws NotFoundException {
+  @SuppressWarnings("unchecked")
+public DetectorResult detect() throws NotFoundException {
 
     ResultPoint[] cornerPoints = rectangleDetector.detect();
     ResultPoint pointA = cornerPoints[0];
@@ -68,7 +69,8 @@ public final class Detector {
     // Point A and D are across the diagonal from one another,
     // as are B and C. Figure out which are the solid black lines
     // by counting transitions
-    Vector transitions = new Vector(4);
+    @SuppressWarnings("rawtypes")
+	Vector transitions = new Vector(4);
     transitions.addElement(transitionsBetween(pointA, pointB));
     transitions.addElement(transitionsBetween(pointA, pointC));
     transitions.addElement(transitionsBetween(pointB, pointD));
@@ -82,7 +84,8 @@ public final class Detector {
 
     // Figure out which point is their intersection by tallying up the number of times we see the
     // endpoints in the four endpoints. One will show up twice.
-    Hashtable pointCount = new Hashtable();
+    @SuppressWarnings("rawtypes")
+	Hashtable pointCount = new Hashtable();
     increment(pointCount, lSideOne.getFrom());
     increment(pointCount, lSideOne.getTo());
     increment(pointCount, lSideTwo.getFrom());
@@ -91,7 +94,8 @@ public final class Detector {
     ResultPoint maybeTopLeft = null;
     ResultPoint bottomLeft = null;
     ResultPoint maybeBottomRight = null;
-    Enumeration points = pointCount.keys();
+    @SuppressWarnings("rawtypes")
+	Enumeration points = pointCount.keys();
     while (points.hasMoreElements()) {
       ResultPoint point = (ResultPoint) points.nextElement();
       Integer value = (Integer) pointCount.get(point);
@@ -232,7 +236,8 @@ public final class Detector {
   /**
    * Increments the Integer associated with a key by one.
    */
-  private static void increment(Hashtable table, ResultPoint key) {
+  @SuppressWarnings("unchecked")
+private static void increment(@SuppressWarnings("rawtypes") Hashtable table, ResultPoint key) {
     Integer value = (Integer) table.get(key);
     table.put(key, value == null ? INTEGERS[1] : INTEGERS[value.intValue() + 1]);
   }

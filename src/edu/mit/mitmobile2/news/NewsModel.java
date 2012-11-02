@@ -20,15 +20,6 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
 
-import edu.mit.mitmobile2.ConnectionWrapper;
-import edu.mit.mitmobile2.MobileWebApi;
-import edu.mit.mitmobile2.ConnectionWrapper.ConnectionInterface;
-import edu.mit.mitmobile2.ConnectionWrapper.ErrorType;
-import edu.mit.mitmobile2.FixedCache;
-import edu.mit.mitmobile2.about.BuildSettings;
-import edu.mit.mitmobile2.objs.NewsItem;
-import edu.mit.mitmobile2.objs.SearchResults;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -39,6 +30,14 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
+import edu.mit.mitmobile2.ConnectionWrapper;
+import edu.mit.mitmobile2.ConnectionWrapper.ConnectionInterface;
+import edu.mit.mitmobile2.ConnectionWrapper.ErrorType;
+import edu.mit.mitmobile2.FixedCache;
+import edu.mit.mitmobile2.MobileWebApi;
+import edu.mit.mitmobile2.about.BuildSettings;
+import edu.mit.mitmobile2.objs.NewsItem;
+import edu.mit.mitmobile2.objs.SearchResults;
 
 public class NewsModel {
 	// categorys
@@ -57,10 +56,8 @@ public class NewsModel {
 	
 	
 	static final String[] category_titles = {
-		"Top News", "Campus", "Engineering", "Science", "Management", "Architecture", "Humanities"
+		"Top News", "Campus", "Engineering", "Science", "Management", "Architecture", "Humanties"
 	};
-	
-	final static int MAX_STORIES_PER_CAREGORY = 200;
 	
 	public static final int FETCH_SUCCESSFUL = 1;
 	public static final int FETCH_FAILED = 2;
@@ -182,7 +179,7 @@ public class NewsModel {
 			}
 		}.start();
 		
-		String bookmarkStatusText = bookmarkStatus ? "Bookmark saved" : "Bookmark removed";
+		String bookmarkStatusText = bookmarkStatus ? "saving bookmark" : "removing bookmark";
 		Toast.makeText(mContext, bookmarkStatusText, Toast.LENGTH_LONG).show();
 	}
 	
@@ -350,6 +347,7 @@ public class NewsModel {
 				
 				mHandler = new Handler() {
 					
+					@Override
 					public void handleMessage(Message msg) {
 						if(msg.arg1 == FETCH_THUMBNAIL_STOP) {
 							Looper.myLooper().quit();
@@ -463,20 +461,18 @@ public class NewsModel {
 		return message;
 	}
 	
-	public void executeSearch(final String searchTerm, final Handler uiHandler, int start) {
+	public void executeSearch(final String searchTerm, final Handler uiHandler) {
 		// check cache
 		if(searchCache.get(searchTerm) != null) {
 			SearchResults<NewsItem> searchResults = searchCache.get(searchTerm);
-			if (searchResults.getResultsList().size() > start) {
-				MobileWebApi.sendSuccessMessage(uiHandler, searchResults);
-				return;
-			}
+			MobileWebApi.sendSuccessMessage(uiHandler, searchResults);
+			return;
 		}
 		
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("searchword", searchTerm);
 		params.put("ordering", "newest");
-		params.put("start", String.valueOf(start));
+		params.put("start", "0");
 		params.put("limit", "50");
 		
 		String query = MobileWebApi.query(params);
@@ -493,11 +489,6 @@ public class NewsModel {
 				public void onResponse(InputStream stream) {
 					SearchResults<NewsItem> results = parseNewsSearchResults(stream, searchTerm);
 					if (results != null) {
-						SearchResults<NewsItem> lastResults = searchCache.get(searchTerm);
-						if (null != lastResults) {
-							lastResults.addMoreResults(results.getResultsList());
-							results = lastResults;
-						}
 						searchCache.put(searchTerm, results);
 						MobileWebApi.sendSuccessMessage(uiHandler, results);
 					} else {

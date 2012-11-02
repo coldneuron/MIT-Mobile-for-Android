@@ -26,6 +26,7 @@ public class StopsParser extends JSONParser {
 	}
 
 	/****************************************/
+	@SuppressWarnings("unchecked")
 	@Override
 	protected
 	void parseObj(){
